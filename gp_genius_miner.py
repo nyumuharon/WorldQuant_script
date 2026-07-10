@@ -255,12 +255,41 @@ class CustomAlphaMutator:
         return child1, child2
 
 class WQOnlineGP:
-    def __init__(self, population_size=12):
+    def __init__(self, region="USA", population_size=12):
+        self.region = region.upper()
         self.population_size = population_size
         self.mutator = None
         self.history = []
         self.passed_alphas = []
         self.session = None
+
+        # Regional mapping (from PDF specification)
+        universe_mapping = {
+            "USA": "TOP3000",
+            "GLB": "GLB3000",
+            "IND": "TOP1000",
+            "ASI": "TOP2000",
+            "CHN": "TOP2000"
+        }
+        neutralization_mapping = {
+            "USA": "SUBINDUSTRY",
+            "GLB": "SUBINDUSTRY",
+            "IND": "INDUSTRY",
+            "ASI": "SECTOR",
+            "CHN": "SUBINDUSTRY"
+        }
+
+        self.universe = universe_mapping.get(self.region, "TOP3000")
+        self.neutralization = neutralization_mapping.get(self.region, "SUBINDUSTRY")
+
+        # Concurrency limit based on Genius tier limits:
+        # GLB allows 4 concurrent simulations, other regions allow 8!
+        if self.region == "GLB":
+            self.concurrency_limit = 4
+        else:
+            self.concurrency_limit = 8
+
+        self.decay = 12
 
         self.sim_config = {
             'get_pnl': False,
@@ -277,11 +306,11 @@ class WQOnlineGP:
         from ace_lib import generate_alpha
         return generate_alpha(
             regular=formula,
-            region="USA",
-            universe="TOP3000",
+            region=self.region,
+            universe=self.universe,
             delay=1,
-            decay=12,  # Environmental linear smoothing over 12 days to mathematically lower turnover
-            neutralization="SUBINDUSTRY"
+            decay=self.decay,
+            neutralization=self.neutralization
         )
 
     def safe_simulate_alpha_list(self, payloads, retries=10):
@@ -291,7 +320,7 @@ class WQOnlineGP:
                 results = simulate_alpha_list(
                     self.session, 
                     payloads, 
-                    limit_of_concurrent_simulations=3, 
+                    limit_of_concurrent_simulations=self.concurrency_limit, 
                     simulation_config=self.sim_config
                 )
                 return results
@@ -353,24 +382,60 @@ class WQOnlineGP:
         for item in results:
             formula = item["simulate_data"]["regular"]
             alpha_id = item.get("alpha_id")
-            sharpe, fitness, turnover, margin = 0.0, 0.0, 0.0, 0.0
             
-            is_stats = item.get("is_stats")
-            if is_stats is not None and not is_stats.empty:
-                sharpe = float(is_stats.iloc[0].get("sharpe", 0.0))
-                fitness = float(is_stats.iloc[0].get("fitness", 0.0))
-                turnover = float(is_stats.iloc[0].get("turnover", 0.0))
-                margin = float(is_stats.iloc[0].get("margin", 0.0))
+            # Detailed metrics initialization
+            sub_universe_sharpe = 0.0
+            robust_sharpe = 0.0
+            ladder_yr_2_sharpe = 0.0
+            returns = 0.0
+            sharpe = 0.0
+            fitness = 0.0
+            turnover = 0.0
+            margin = 0.0
+
+            if alpha_id:
+                try:
+                    # Query the full simulation result JSON from WQ Brain API
+                    result_json = ace_lib.get_simulation_result_json(self.session, alpha_id)
+                    is_data = result_json.get("is", {})
+                    sharpe = float(is_data.get("sharpe", 0.0))
+                    fitness = float(is_data.get("fitness", 0.0))
+                    turnover = float(is_data.get("turnover", 0.0))
+                    returns = float(is_data.get("returns", 0.0))
+                    margin = float(is_data.get("margin", 0.0))
+                    
+                    sub_universe_sharpe = float(is_data.get("subUniverseSharpe", 0.0))
+                    robust_sharpe = float(is_data.get("robustSharpe", 0.0))
+                    
+                    # Year 2 Ladder Sharpe is the second element in the ladder list
+                    ladder_data = result_json.get("ladder", [])
+                    if isinstance(ladder_data, list) and len(ladder_data) >= 2:
+                        ladder_yr_2_sharpe = float(ladder_data[1].get("sharpe", 0.0))
+                except Exception as e:
+                    print(f"--> [Warning] Failed to fetch full JSON stats for {alpha_id}: {e}")
+                    is_stats = item.get("is_stats")
+                    if is_stats is not None and not is_stats.empty:
+                        sharpe = float(is_stats.iloc[0].get("sharpe", 0.0))
+                        fitness = float(is_stats.iloc[0].get("fitness", 0.0))
+                        turnover = float(is_stats.iloc[0].get("turnover", 0.0))
+                        margin = float(is_stats.iloc[0].get("margin", 0.0))
 
             is_tests = item.get("is_tests")
             checks_data = self.parse_is_checks(is_tests)
             
-            passed_all = self.check_if_passed(checks_data)
-            passed_status = "PASS" if passed_all else "FAIL"
+            passed_all_platform = self.check_if_passed(checks_data)
+            
+            # Local Genius-level validation check (Section 4 & 5 Blueprint)
+            passed_genius = (
+                sharpe >= 1.58 and
+                fitness >= 1.0 and
+                0.01 <= turnover <= 0.40 and
+                sub_universe_sharpe >= 0.87 and
+                robust_sharpe >= 1.0 and
+                ladder_yr_2_sharpe >= 2.02
+            )
+            
             passed_count = self.get_passed_count(checks_data)
-
-            # Optimizing for the 12.5% to 30% Turnover corridor (Section 4.3)
-            # Apply a penalty to the sorting priority if turnover falls outside this corridor
             corridor_bonus = 1 if (0.125 <= turnover <= 0.30) else 0
 
             record = {
@@ -381,27 +446,36 @@ class WQOnlineGP:
                 "fitness": fitness,
                 "turnover": turnover,
                 "margin_or_sub_sharpe": margin,
-                "status": passed_status,
+                "sub_universe_sharpe": sub_universe_sharpe,
+                "robust_sharpe": robust_sharpe,
+                "ladder_year_2_sharpe": ladder_yr_2_sharpe,
+                "status": "PASS" if (passed_all_platform or passed_genius) else "FAIL",
                 "passed_count": passed_count + corridor_bonus,
+                "is_genius": "PASS" if passed_genius else "FAIL",
                 "origin": origin_status
             }
             record.update(checks_data)
             self.history.append(record)
 
-            if passed_all:
+            if passed_all_platform or passed_genius:
                 passed_record = {
                     "formula": formula,
                     "alpha_id": alpha_id,
                     "sharpe": sharpe,
                     "fitness": fitness,
                     "turnover": turnover,
-                    "margin_or_sub_sharpe": margin
+                    "margin_or_sub_sharpe": margin,
+                    "sub_universe_sharpe": sub_universe_sharpe,
+                    "robust_sharpe": robust_sharpe,
+                    "ladder_year_2_sharpe": ladder_yr_2_sharpe,
+                    "is_genius": "PASS" if passed_genius else "FAIL"
                 }
                 passed_record.update(checks_data)
                 
                 if not any(x["formula"] == formula for x in self.passed_alphas):
                     self.passed_alphas.append(passed_record)
-                    print(f"--> [PASSED] Alpha {alpha_id} passed all 7 checks! Added to golden list.")
+                    status_lbl = "GENIUS" if passed_genius else "PLATFORM"
+                    print(f"--> [{status_lbl} PASSED] Alpha {alpha_id} passed! Added to golden list.")
 
             yield record
 
@@ -417,8 +491,8 @@ class WQOnlineGP:
         ops_df = get_operators(self.session)
         allowed_ops = set(ops_df['name'].tolist())
 
-        print("Querying allowed datafields for USA region...")
-        fields_df = get_datafields(self.session, region="USA", delay=1, universe="TOP3000")
+        print(f"Querying allowed datafields for {self.region} region...")
+        fields_df = get_datafields(self.session, region=self.region, delay=1, universe=self.universe)
 
         self.mutator = CustomAlphaMutator(allowed_ops, fields_df)
         print(f"Loaded {len(allowed_ops)} operators and {len(self.mutator.all_fields)} MATRIX fields.")
@@ -436,6 +510,10 @@ class WQOnlineGP:
                         rec["generation"] = 0
                         rec["status"] = "PASS"
                         rec["passed_count"] = int(rec.get("passed_count", 7))
+                        rec["sub_universe_sharpe"] = float(rec.get("sub_universe_sharpe", 0.0))
+                        rec["robust_sharpe"] = float(rec.get("robust_sharpe", 0.0))
+                        rec["ladder_year_2_sharpe"] = float(rec.get("ladder_year_2_sharpe", 0.0))
+                        rec["is_genius"] = rec.get("is_genius", "FAIL")
                         pre_existing_records.append(rec)
                     print(f"Loaded {len(pre_existing_records)} pre-existing 7/7 alphas directly into memory.")
             except Exception as e:
@@ -546,15 +624,56 @@ class WQOnlineGP:
         except Exception:
             pass
 
+def input_with_timeout(prompt, timeout=10, default="USA"):
+    # Check if there are command line arguments first
+    if len(sys.argv) > 1:
+        arg_val = sys.argv[1].strip().upper()
+        if arg_val in ("USA", "GLB", "IND", "ASI", "CHN"):
+            print(f"Using region from command line argument: {arg_val}")
+            return arg_val
+
+    try:
+        import msvcrt
+        print(prompt, end="", flush=True)
+        start_time = time.time()
+        input_str = ""
+        while time.time() - start_time < timeout:
+            if msvcrt.kbhit():
+                char = msvcrt.getwche()
+                if char in ("\r", "\n"):
+                    print()
+                    return input_str.strip().upper()
+                elif char in ("\b", "\xe0"):
+                    if len(input_str) > 0:
+                        input_str = input_str[:-1]
+                else:
+                    input_str += char
+            time.sleep(0.05)
+        print(f"\nNo input received within {timeout} seconds. Defaulting to {default}.")
+        return default
+    except Exception:
+        try:
+            val = input(f"{prompt} (press Enter to use default {default}): ").strip().upper()
+            return val if val in ("USA", "GLB", "IND", "ASI", "CHN") else default
+        except Exception:
+            return default
+
 if __name__ == "__main__":
-    # Standard initial seeds utilizing the parenthetical nesting spec:
-    # supporting_operator( booster_operator( supporting_field ) * booster_operator( booster_field ) )
+    region_choice = input_with_timeout(
+        "Enter target region to mine (USA, GLB, IND, ASI, CHN) [default: USA]: ",
+        timeout=10,
+        default="USA"
+    )
+    if region_choice not in ("USA", "GLB", "IND", "ASI", "CHN"):
+        print(f"Unknown region '{region_choice}'. Defaulting to USA.")
+        region_choice = "USA"
+        
     seed_formulas = [
         "ts_mean(rank(close) * rank(volume), 252)",
         "ts_mean(sign(open / close - 1) * scale(volume), 126)",
         "ts_delay(rank(close) * ts_rank(volume, 126), 63)"
     ]
     
-    # Run the bounded loop
-    gp = WQOnlineGP(population_size=12)
+    # Run the bounded loop with the chosen region and the correct Genius concurrency settings
+    gp = WQOnlineGP(region=region_choice, population_size=12)
     gp.run_online_evolution(seed_formulas, num_generations=500)
