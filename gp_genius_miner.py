@@ -29,7 +29,7 @@ from ace_lib import start_session, simulate_alpha_list, get_operators, get_dataf
 from helpful_functions import prettify_result
 
 # Patch get_credentials to automatically authenticate with this specific account
-ace_lib.get_credentials = lambda: ("sofiajuma015@gmail.com", "Agil@123")
+ace_lib.get_credentials = lambda: ("sungura693@gmail.com", "Sofia@123")
 
 # Monkey-patch start_simulation to automatically retry when 429 Concurrent Limit Exceeded occurs
 original_start_simulation = ace_lib.start_simulation
