@@ -235,8 +235,13 @@ class CustomAlphaMutator:
         return re.sub(pattern, replacement, formula, count=1)
 
     def mutate_turnover(self, formula):
-        """Wraps a formula in a linear decay function."""
+        """Wraps a formula (or the final expression in a multi-statement formula) in a linear decay function."""
         decay_period = random.choice([5, 10, 20])
+        if ";" in formula:
+            statements = [s.strip() for s in formula.split(";") if s.strip()]
+            if statements:
+                statements[-1] = f"ts_decay_linear({statements[-1]}, {decay_period})"
+                return "; ".join(statements) + ";"
         return f"ts_decay_linear({formula}, {decay_period})"
 
     def mutate(self, formula, region, status_dict=None):

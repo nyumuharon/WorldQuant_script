@@ -85,3 +85,17 @@
 2026-07-10 23:34:42,495 - ace - WARNING - Cant check submission alpha_id gJMj3jgl. {'detail': 'THROTTLED'}
 2026-07-10 23:34:48,175 - ace - WARNING - Cant check submission alpha_id 2rLlKx3J. {'detail': 'THROTTLED'}
 2026-07-10 23:47:18,998 - ace - WARNING - Cant check submission alpha_id omlqKjAJ. {'detail': 'THROTTLED'}
+2026-07-10 23:58:34,184 - ace - WARNING - Cant check submission alpha_id kq0jZqnO. {'detail': 'THROTTLED'}
+2026-07-10 23:58:38,704 - ace - WARNING - Cant check submission alpha_id lelj3evN. {'detail': 'THROTTLED'}
+2026-07-11 00:05:43,616 - ace - INFO - Getting fields for: region=ASI, delay=1, universe=MINVOL1M
+2026-07-11 00:10:05,426 - ace - WARNING - Cant check submission alpha_id N1r7RK98. {'detail': 'THROTTLED'}
+2026-07-11 00:10:06,492 - ace - WARNING - Cant check submission alpha_id GrLle9Xo. {'detail': 'THROTTLED'}
+2026-07-11 00:10:09,827 - ace - WARNING - Cant check submission alpha_id O0Z7xL3b. {'detail': 'THROTTLED'}
+2026-07-11 00:10:13,050 - ace - WARNING - Cant check submission alpha_id P037GamM. {'detail': 'THROTTLED'}
+2026-07-11 00:10:15,573 - ace - WARNING - Cant check submission alpha_id qMljNkQK. {'detail': 'THROTTLED'}
+2026-07-11 00:21:19,597 - ace - WARNING - Cant check submission alpha_id YP07vJev. {'detail': 'THROTTLED'}
+2026-07-11 00:21:20,522 - ace - WARNING - Cant check submission alpha_id QPV7Gxzw. {'detail': 'THROTTLED'}
+2026-07-11 00:21:22,446 - ace - WARNING - Cant check submission alpha_id GrLll1dO. {'detail': 'THROTTLED'}
+2026-07-11 00:21:23,783 - ace - ERROR - Simulation failed. {'id': '1QEtT8s84hO9Mq2EwDcpFh', 'type': 'REGULAR', 'status': 'ERROR', 'message': 'Unexpected character \'(\' near "ha=ts_rank(imb5_scor". <linkToCommonErrorMessages>Learn more</linkToCommonErrorMessages>', 'location': {'line': 1, 'start': 29, 'end': 30, 'property': 'regular'}, 'links': {'linkToCommonErrorMessages': 'https://support.worldquantbrain.com/hc/en-us/articles/18423410021783--BRAIN-TIPS-Troubleshooting-common-error-messages'}}
+2026-07-11 00:24:22,922 - ace - ERROR - Simulation failed. {'id': 'v2cxvdlq4Pz9xkkT2KpSep', 'type': 'REGULAR', 'status': 'ERROR', 'message': 'Unexpected character \'(\' near "ha=ts_rank(imb5_scor". <linkToCommonErrorMessages>Learn more</linkToCommonErrorMessages>', 'location': {'line': 1, 'start': 29, 'end': 30, 'property': 'regular'}, 'links': {'linkToCommonErrorMessages': 'https://support.worldquantbrain.com/hc/en-us/articles/18423410021783--BRAIN-TIPS-Troubleshooting-common-error-messages'}}
+2026-07-11 00:31:53,117 - ace - WARNING - Cant check submission alpha_id A1PllYGw. {'detail': 'THROTTLED'}
