@@ -748,6 +748,48 @@ class WQOnlineGP:
         except Exception:
             pass
 
+def input_with_timeout(prompt, timeout=10, default="ASI"):
+    import sys
+    import time
+    try:
+        import msvcrt
+        sys.stdout.write(prompt)
+        sys.stdout.flush()
+        
+        start_time = time.time()
+        input_str = ""
+        
+        while True:
+            if time.time() - start_time > timeout:
+                sys.stdout.write("\n")
+                sys.stdout.flush()
+                print(f"--> Timeout reached. Using default: {default}")
+                return default
+                
+            if msvcrt.kbhit():
+                try:
+                    char = msvcrt.getwche()
+                    if char in ('\r', '\n'):
+                        sys.stdout.write("\n")
+                        sys.stdout.flush()
+                        return input_str.strip()
+                    elif char == '\b':
+                        if len(input_str) > 0:
+                            input_str = input_str[:-1]
+                            sys.stdout.write(" \b")
+                            sys.stdout.flush()
+                    else:
+                        input_str += char
+                except Exception:
+                    pass
+            time.sleep(0.05)
+    except Exception:
+        try:
+            val = input(prompt).strip()
+            return val if val else default
+        except Exception:
+            return default
+
 if __name__ == "__main__":
     region_choice = input_with_timeout(
         "Enter target region to mine (ASI, USA, GLB, IND, or ALL) [default: ASI]: ",

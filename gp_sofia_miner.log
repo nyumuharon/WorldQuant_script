@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+Traceback (most recent call last):
+  File "C:\Users\HP\H_PROJECT_RESEARCH_PACKAGE_CLEAN\gp_sofia_miner.py", line 752, in <module>
+    region_choice = input_with_timeout(
+                    ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\H_PROJECT_RESEARCH_PACKAGE_CLEAN\gp_sofia_miner.py", line 752, in <module>
+    region_choice = input_with_timeout(
+                    ^^^^^^^^^^^^^^^^^^
+NameError: name 'input_with_timeout' is not defined
+NameError: name 'input_with_timeout' is not defined
