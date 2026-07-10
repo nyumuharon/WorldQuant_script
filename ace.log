@@ -59,3 +59,7 @@
 2026-07-10 07:29:53,120 - ace - WARNING - Cant check submission alpha_id QPV9ZX9p. {'detail': 'THROTTLED'}
 2026-07-10 07:32:39,833 - ace - INFO - Getting fields for: region=USA, delay=1, universe=TOP3000
 2026-07-10 22:14:26,864 - ace - INFO - Getting fields for: region=USA, delay=1, universe=TOP3000
+2026-07-10 22:38:13,628 - ace - INFO - Getting fields for: region=USA, delay=1, universe=TOP3000
+2026-07-10 22:38:56,593 - ace - INFO - Getting fields for: region=GLB, delay=1, universe=MINVOL1M
+2026-07-10 22:39:13,511 - ace - INFO - Getting fields for: region=IND, delay=1, universe=TOP500
+2026-07-10 22:39:22,362 - ace - INFO - Getting fields for: region=ASI, delay=1, universe=MINVOL1M

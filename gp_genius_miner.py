@@ -534,7 +534,8 @@ class WQOnlineGP:
                 if not hist_df.empty and "formula" in hist_df.columns:
                     # Stored key format: (region, formula)
                     for _, row in hist_df.iterrows():
-                        self.simulated_formulas.add((row["region"].upper(), row["formula"]))
+                        reg_val = str(row.get("region", "USA")).upper()
+                        self.simulated_formulas.add((reg_val, row["formula"]))
                     print(f"Loaded {len(self.simulated_formulas)} historically simulated formulas.")
             except Exception as e:
                 print(f"Note: Could not load history: {e}")
