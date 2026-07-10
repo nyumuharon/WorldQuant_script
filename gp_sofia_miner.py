@@ -44,17 +44,12 @@ import ace_lib
 from ace_lib import start_session, simulate_alpha_list, get_operators, get_datafields
 from helpful_functions import prettify_result
 
-# Configuration flag to strictly log in exactly once.
-# If True, the script will perform only one initial login and exit when the session token expires (after ~2 hours) to avoid login rate limits.
-# If False, the script will safely refresh the session once every 2 hours as needed, with strict protection against login spamming.
-STRICT_SINGLE_LOGIN = False
-
 # Patch get_credentials to automatically authenticate with this specific account
 ace_lib.get_credentials = lambda: ("sofiajuma015@gmail.com", "Agil@123")
 
-# Monkey-patch check_session_and_relogin to prevent background relogins if strict single login is enabled
-if STRICT_SINGLE_LOGIN:
-    ace_lib.check_session_and_relogin = lambda s: s
+# Monkey-patch check_session_and_relogin to completely disable background session refreshes.
+# This guarantees that the script will NEVER perform background logins during the night.
+ace_lib.check_session_and_relogin = lambda s: s
 
 # Monkey-patch start_simulation to automatically retry when 429 Concurrent Limit Exceeded occurs
 original_start_simulation = ace_lib.start_simulation
@@ -368,31 +363,6 @@ class WQOnlineGP:
             neutralization=self.neutralization_mapping.get(region, "SUBINDUSTRY")
         )
 
-    def refresh_session_if_needed(self):
-        """Refreshes the session only if it is actually expired or at least 15 minutes have passed since last login."""
-        now = time.time()
-        # Check if the token is still valid using check_session_timeout from ace_lib
-        from ace_lib import check_session_timeout
-        try:
-            remaining = check_session_timeout(self.session)
-            if remaining > 300:  # If token has more than 5 minutes remaining, it is still valid!
-                return
-        except Exception:
-            pass  # Timeout check failed, proceed to rate limit check
-            
-        if STRICT_SINGLE_LOGIN:
-            print("--> [Strict Session Guard] Session has expired. STRICT_SINGLE_LOGIN is enabled. Stopping execution to prevent further sign-ins.")
-            sys.exit(0)
-
-        # Only log in if at least 15 minutes (900 seconds) have passed since the last login attempt
-        if now - self.last_login_time > 900:
-            print("--> [Session Manager] Session expired or invalid. Performing safe session refresh...")
-            try:
-                self.session = start_session()
-                self.last_login_time = now
-            except Exception as e:
-                print(f"--> [Session Manager Error] Failed to refresh session: {e}")
-
     def safe_simulate_alpha_list(self, payloads, retries=1000):
         for attempt in range(retries):
             try:
@@ -406,7 +376,6 @@ class WQOnlineGP:
             except Exception as e:
                 print(f"--> [Network Connection Error] {e}. Attempt {attempt + 1}/{retries}. Retrying in 45 seconds...")
                 time.sleep(45)
-                self.refresh_session_if_needed()
         print("--> [Critical Error] All network retries failed.")
         return []
 
@@ -422,7 +391,6 @@ class WQOnlineGP:
             except Exception as e:
                 print(f"--> [Network Error in API Query] {e}. Attempt {attempt + 1}/1000. Retrying query in 15 seconds...")
                 time.sleep(15)
-                self.refresh_session_if_needed()
         return None
 
     def parse_is_checks(self, is_tests_df):
