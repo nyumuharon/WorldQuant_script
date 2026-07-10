@@ -749,6 +749,15 @@ class WQOnlineGP:
             pass
 
 if __name__ == "__main__":
+    region_choice = input_with_timeout(
+        "Enter target region to mine (ASI, USA, GLB, IND, or ALL) [default: ASI]: ",
+        timeout=10,
+        default="ASI"
+    )
+    if region_choice not in ("ASI", "USA", "GLB", "IND", "ALL"):
+        print(f"Unknown region '{region_choice}'. Defaulting to ASI.")
+        region_choice = "ASI"
+
     # Load dynamic regional seed pools based on your passed alphas
     regional_seeds = {
         "USA": [
@@ -770,6 +779,16 @@ if __name__ == "__main__":
         ]
     }
     
-    # Run the multi-region island loop concurrently
-    gp = WQOnlineGP(regions=["USA", "GLB", "IND", "ASI"], population_size_per_region=6)
+    if region_choice == "ALL":
+        target_regions = ["USA", "GLB", "IND", "ASI"]
+        concurrency = 4
+        pop_size = 6
+    else:
+        target_regions = [region_choice]
+        concurrency = 4  # Limit to 4 concurrent simulations as requested
+        pop_size = 12    # Increase population size to 12 for deep single-region evolution
+        
+    print(f"--> Starting Evolution Loop for regions: {target_regions} (Concurrency: {concurrency}, Pop Size: {pop_size})")
+    gp = WQOnlineGP(regions=target_regions, population_size_per_region=pop_size)
+    gp.concurrency_limit = concurrency
     gp.run_online_evolution(regional_seeds, num_generations=500)
