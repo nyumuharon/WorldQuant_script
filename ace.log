@@ -71,3 +71,10 @@
 2026-07-10 22:46:17,021 - ace - WARNING - Simulation failed. {"detail":"CONCURRENT_SIMULATION_LIMIT_EXCEEDED"}, Status code: 429
 2026-07-10 22:47:22,621 - ace - WARNING - Simulation failed. {"detail":"CONCURRENT_SIMULATION_LIMIT_EXCEEDED"}, Status code: 429
 2026-07-10 22:50:42,355 - ace - ERROR - Simulation https://api.worldquantbrain.com/simulations/2t79AK58F54UcEjD3lgCeP0, Status code: 504, Retry
+2026-07-10 22:57:01,104 - ace - ERROR - Simulation failed. {'id': '254IIlcwY4JHb6SBMsDMPXJ', 'type': 'REGULAR', 'status': 'ERROR', 'message': 'Attempted to use unknown variable "oth335_hc_combined_all_region_linear". <linkToCommonErrorMessages>Learn more</linkToCommonErrorMessages>', 'location': {'line': 1, 'start': 15, 'end': 51, 'property': 'regular'}, 'links': {'linkToCommonErrorMessages': 'https://support.worldquantbrain.com/hc/en-us/articles/18423410021783--BRAIN-TIPS-Troubleshooting-common-error-messages'}}
+2026-07-10 23:03:42,789 - ace - ERROR - Simulation failed. {'id': '4d1ytb4rx53JbXZE6m0yB8C', 'type': 'REGULAR', 'status': 'ERROR', 'message': 'Attempted to use unknown variable "oth335_hc_combined_all_region_linear". <linkToCommonErrorMessages>Learn more</linkToCommonErrorMessages>', 'location': {'line': 1, 'start': 15, 'end': 51, 'property': 'regular'}, 'links': {'linkToCommonErrorMessages': 'https://support.worldquantbrain.com/hc/en-us/articles/18423410021783--BRAIN-TIPS-Troubleshooting-common-error-messages'}}
+2026-07-10 23:06:41,614 - ace - WARNING - Cant check submission alpha_id vRljdwMv. {'detail': 'THROTTLED'}
+2026-07-10 23:06:44,656 - ace - WARNING - Cant check submission alpha_id WjG79K6G. {'detail': 'THROTTLED'}
+2026-07-10 23:06:45,793 - ace - WARNING - Cant check submission alpha_id MPQ7k8lo. {'detail': 'THROTTLED'}
+2026-07-10 23:06:46,803 - ace - WARNING - Cant check submission alpha_id e70zLndN. {'detail': 'THROTTLED'}
+2026-07-10 23:06:48,952 - ace - WARNING - Cant check submission alpha_id A1Plk7gQ. {'detail': 'THROTTLED'}

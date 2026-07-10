@@ -44,6 +44,35 @@ def start_simulation_with_retry(s, simulate_data):
     return response
 ace_lib.start_simulation = start_simulation_with_retry
 
+# Monkey-patch simulate_single_alpha to catch network drops inside the thread pool
+original_simulate_single_alpha = ace_lib.simulate_single_alpha
+def safe_simulate_single_alpha(s, simulate_data):
+    try:
+        return original_simulate_single_alpha(s, simulate_data)
+    except Exception as e:
+        print(f"--> [Warning] simulate_single_alpha failed due to connection reset: {e}. Retrying with empty ID.")
+        return {"alpha_id": None, "simulate_data": simulate_data}
+ace_lib.simulate_single_alpha = safe_simulate_single_alpha
+
+# Monkey-patch get_specified_alpha_stats to catch KeyError 'train'/'test' on failed/timed-out simulations
+original_get_specified_alpha_stats = ace_lib.get_specified_alpha_stats
+def safe_get_specified_alpha_stats(s, alpha_id, simulate_data, *args, **kwargs):
+    try:
+        return original_get_specified_alpha_stats(s, alpha_id, simulate_data, *args, **kwargs)
+    except Exception as e:
+        print(f"--> [Warning] get_specified_alpha_stats encountered error: {e}. Recovering safely.")
+        return {
+            "alpha_id": alpha_id,
+            "simulate_data": simulate_data,
+            "is_stats": None,
+            "pnl": None,
+            "stats": None,
+            "is_tests": None,
+            "train": None,
+            "test": None
+        }
+ace_lib.get_specified_alpha_stats = safe_get_specified_alpha_stats
+
 class CustomAlphaMutator:
     """
     Advanced Bug-Free Mutator targeting region-specific fields and templates.
