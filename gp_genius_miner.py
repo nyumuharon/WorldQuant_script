@@ -263,20 +263,27 @@ class WQOnlineGP:
         self.passed_alphas = []
         self.session = None
 
-        # Regional mapping (from PDF specification)
+        # Regional mapping (optimized for Genius-level passed alphas)
         universe_mapping = {
             "USA": "TOP3000",
-            "GLB": "GLB3000",
-            "IND": "TOP1000",
-            "ASI": "TOP2000",
+            "GLB": "MINVOL1M",
+            "IND": "TOP500",
+            "ASI": "MINVOL1M",
             "CHN": "TOP2000"
         }
         neutralization_mapping = {
-            "USA": "SUBINDUSTRY",
-            "GLB": "SUBINDUSTRY",
-            "IND": "INDUSTRY",
-            "ASI": "SECTOR",
+            "USA": "INDUSTRY",
+            "GLB": "STATISTICAL",
+            "IND": "STATISTICAL",
+            "ASI": "STATISTICAL",
             "CHN": "SUBINDUSTRY"
+        }
+        decay_mapping = {
+            "USA": 4,
+            "GLB": 5,
+            "IND": 5,
+            "ASI": 7,
+            "CHN": 12
         }
 
         self.universe = universe_mapping.get(self.region, "TOP3000")
@@ -289,7 +296,7 @@ class WQOnlineGP:
         else:
             self.concurrency_limit = 8
 
-        self.decay = 12
+        self.decay = decay_mapping.get(self.region, 12)
 
         self.sim_config = {
             'get_pnl': False,
@@ -668,11 +675,28 @@ if __name__ == "__main__":
         print(f"Unknown region '{region_choice}'. Defaulting to USA.")
         region_choice = "USA"
         
-    seed_formulas = [
-        "ts_mean(rank(close) * rank(volume), 252)",
-        "ts_mean(sign(open / close - 1) * scale(volume), 126)",
-        "ts_delay(rank(close) * ts_rank(volume, 126), 63)"
-    ]
+    # Dynamic seed selection based on the target region (from user's passed Genius alphas)
+    if region_choice == "ASI":
+        seed_formulas = [
+            "alpha=ts_rank(imb5_score,400)+ts_rank(rel_val_buyback_yield_component_score_3,252);group_neutralize(rank(ts_backfill(alpha,600))+ts_rank(-returns,252),subindustry);",
+            "alpha=ts_rank(mdl110_score,400)+ts_rank(rel_val_buyback_yield_component_score_3*adv20,252);group_neutralize(rank(ts_backfill(alpha,600))+ts_rank(-returns,252),subindustry);"
+        ]
+    elif region_choice == "IND":
+        seed_formulas = [
+            "alpha=ts_scale(oth335_hc_combined_all_region_linear,400)+ts_scale(mdl110_score,252);group_neutralize(rank(ts_backfill(alpha,600))+ts_rank(-returns,252),subindustry);"
+        ]
+    elif region_choice == "USA":
+        seed_formulas = [
+            "rank(anl4_capex_flag)-rank(assets/liabilities_curr) + (0.59*trade_when(option_breakeven_270>put_breakeven_270,-rank(fn_eff_income_tax_rate_continuing_operations_a),-1)) + -ts_corr(ts_delta(fscore_momentum,90),ts_delta(fscore_value,90),920)*rank(-volume)",
+            "ts_mean(rank(close) * rank(volume), 252)",
+            "ts_mean(sign(open / close - 1) * scale(volume), 126)"
+        ]
+    else: # GLB
+        seed_formulas = [
+            "alpha=ts_scale(oth335_hc_combined_all_region_linear,400)+ts_scale(mdl110_score,252);group_neutralize(rank(ts_backfill(alpha,600))+ts_rank(-returns,252),subindustry);",
+            "ts_mean(rank(close) * rank(volume), 252)",
+            "ts_mean(sign(open / close - 1) * scale(volume), 126)"
+        ]
     
     # Run the bounded loop with the chosen region and the correct Genius concurrency settings
     gp = WQOnlineGP(region=region_choice, population_size=12)
