@@ -1,0 +1,60 @@
+2026-07-09 18:42:03,623 - ace - INFO - Getting fields for: region=USA, delay=1, universe=TOP3000
+2026-07-09 18:46:35,205 - ace - INFO - Getting fields for: region=USA, delay=1, universe=TOP3000
+2026-07-09 18:47:44,992 - ace - WARNING - Simulation failed. {"detail":"CONCURRENT_SIMULATION_LIMIT_EXCEEDED"}, Status code: 429
+2026-07-09 18:47:46,915 - ace - WARNING - Simulation failed. {"detail":"CONCURRENT_SIMULATION_LIMIT_EXCEEDED"}, Status code: 429
+2026-07-09 18:50:21,755 - ace - INFO - Getting fields for: region=USA, delay=1, universe=TOP3000
+2026-07-09 18:56:44,125 - ace - ERROR - Simulation failed. {'id': 'wu3yY8kA51sbl71eEBb2plt', 'type': 'REGULAR', 'status': 'ERROR', 'message': 'Required attribute "lookback" must have a value. <linkToCommonErrorMessages>Learn more</linkToCommonErrorMessages>', 'location': {'line': 1, 'start': 8, 'end': 37, 'property': 'regular'}, 'links': {'linkToCommonErrorMessages': 'https://support.worldquantbrain.com/hc/en-us/articles/18423410021783--BRAIN-TIPS-Troubleshooting-common-error-messages'}}
+2026-07-09 20:25:25,735 - ace - INFO - Getting fields for: region=USA, delay=1, universe=TOP3000
+2026-07-09 20:34:21,143 - ace - WARNING - Cant check submission alpha_id kq03MMzz. {'detail': 'THROTTLED'}
+2026-07-09 20:34:26,903 - ace - WARNING - Cant check submission alpha_id rKloMJao. {'detail': 'THROTTLED'}
+2026-07-09 20:34:28,624 - ace - WARNING - Cant check submission alpha_id 2rL7oldP. {'detail': 'THROTTLED'}
+2026-07-09 20:46:59,221 - ace - WARNING - Cant check submission alpha_id N1rpE7e8. {'detail': 'THROTTLED'}
+2026-07-09 21:01:56,331 - ace - ERROR - Simulation https://api.worldquantbrain.com/simulations/14wYCvfMk4Ps9zx1fBilWG7k, Status code: 504, Retry
+2026-07-09 22:32:15,345 - ace - INFO - Getting fields for: region=USA, delay=1, universe=TOP3000
+2026-07-09 22:38:44,729 - ace - WARNING - Cant check submission alpha_id pwl6eroo. {'detail': 'THROTTLED'}
+2026-07-09 22:38:45,643 - ace - WARNING - Cant check submission alpha_id xAkx7XZq. {'detail': 'THROTTLED'}
+2026-07-09 22:49:41,426 - ace - WARNING - Cant check submission alpha_id j200Qo7o. {'detail': 'THROTTLED'}
+2026-07-09 22:49:42,933 - ace - WARNING - Cant check submission alpha_id vRllV66Q. {'detail': 'THROTTLED'}
+2026-07-10 02:32:18,780 - ace - ERROR - Simulation https://api.worldquantbrain.com/simulations/21RfzAfth5dCbEOcTHFv1nx, Status code: 401, Retry
+2026-07-10 02:43:40,441 - ace - ERROR - Simulation https://api.worldquantbrain.com/simulations/2013fk1264msaWr1gdyyL9fh, Status code: 504, Retry
+2026-07-10 03:27:07,942 - ace - WARNING - Cant check submission alpha_id vRllZxbG. {'detail': 'THROTTLED'}
+2026-07-10 03:27:08,951 - ace - WARNING - Cant check submission alpha_id MPQQdxG9. {'detail': 'THROTTLED'}
+2026-07-10 03:27:09,975 - ace - WARNING - Cant check submission alpha_id blqqJRJp. {'detail': 'THROTTLED'}
+2026-07-10 03:27:12,047 - ace - WARNING - Cant check submission alpha_id 6X99Z05L. {'detail': 'THROTTLED'}
+2026-07-10 03:39:11,266 - ace - WARNING - Cant check submission alpha_id blqqrKZK. {'detail': 'THROTTLED'}
+2026-07-10 03:49:41,175 - ace - WARNING - Cant check submission alpha_id e700GKZJ. {'detail': 'THROTTLED'}
+2026-07-10 04:08:12,719 - ace - WARNING - Cant check submission alpha_id vRll68Kv. {'detail': 'THROTTLED'}
+2026-07-10 04:08:14,892 - ace - WARNING - Cant check submission alpha_id 6X99JOVG. {'detail': 'THROTTLED'}
+2026-07-10 04:08:15,935 - ace - WARNING - Cant check submission alpha_id d500o79w. {'detail': 'THROTTLED'}
+2026-07-10 04:20:11,713 - ace - ERROR - Simulation https://api.worldquantbrain.com/simulations/3ufFcH9IL4YrcdER7HyfNIC, Status code: 504, Retry
+2026-07-10 04:43:34,535 - ace - WARNING - Cant check submission alpha_id omllkjkk. {'detail': 'THROTTLED'}
+2026-07-10 04:43:39,316 - ace - WARNING - Cant check submission alpha_id blqqgL3m. {'detail': 'THROTTLED'}
+2026-07-10 04:43:40,374 - ace - WARNING - Cant check submission alpha_id VkPPLpGY. {'detail': 'THROTTLED'}
+2026-07-10 04:43:42,534 - ace - WARNING - Cant check submission alpha_id e700GKZJ. {'detail': 'THROTTLED'}
+2026-07-10 04:46:06,462 - ace - ERROR - alpha_id YP00O9Gq, {'Server': 'awselb/2.0', 'Date': 'Fri, 10 Jul 2026 01:46:06 GMT', 'Content-Type': 'text/html', 'Content-Length': '132', 'Connection': 'keep-alive'}, <html>
+<head><title>504 Gateway Time-out</title></head>
+<body>
+<center><h1>504 Gateway Time-out</h1></center>
+</body>
+</html>
+, 504
+2026-07-10 05:15:18,023 - ace - WARNING - Cant check submission alpha_id 1Ydd8kNW. {'detail': 'THROTTLED'}
+2026-07-10 05:32:55,484 - ace - WARNING - Cant check submission alpha_id d500MN7x. {'detail': 'THROTTLED'}
+2026-07-10 05:33:10,276 - ace - WARNING - Cant check submission alpha_id blqqwOYZ. {'detail': 'THROTTLED'}
+2026-07-10 05:33:11,167 - ace - WARNING - Cant check submission alpha_id blqqgL3m. {'detail': 'THROTTLED'}
+2026-07-10 05:44:34,398 - ace - WARNING - Cant check submission alpha_id GrLLZeO0. {'detail': 'THROTTLED'}
+2026-07-10 05:55:29,684 - ace - WARNING - Cant check submission alpha_id 9qr7zJ8V. {'detail': 'THROTTLED'}
+2026-07-10 05:55:30,730 - ace - WARNING - Cant check submission alpha_id np281WG3. {'detail': 'THROTTLED'}
+2026-07-10 05:55:31,761 - ace - WARNING - Cant check submission alpha_id 1YdzqzmJ. {'detail': 'THROTTLED'}
+2026-07-10 05:55:33,336 - ace - WARNING - Cant check submission alpha_id 0mEMbjR1. {'detail': 'THROTTLED'}
+2026-07-10 06:13:06,189 - ace - WARNING - Cant check submission alpha_id gJM9JWWM. {'detail': 'THROTTLED'}
+2026-07-10 06:31:11,557 - ace - WARNING - Cant check submission alpha_id WjGVMdoG. {'detail': 'THROTTLED'}
+2026-07-10 06:31:14,786 - ace - WARNING - Cant check submission alpha_id 0mEMqRpG. {'detail': 'THROTTLED'}
+2026-07-10 06:46:28,560 - ace - WARNING - Cant check submission alpha_id xAkd61el. {'detail': 'THROTTLED'}
+2026-07-10 06:46:36,058 - ace - WARNING - Cant check submission alpha_id GrLeaNoG. {'detail': 'THROTTLED'}
+2026-07-10 07:09:21,723 - ace - WARNING - Cant check submission alpha_id kq0Zr6Kz. {'detail': 'THROTTLED'}
+2026-07-10 07:09:23,501 - ace - WARNING - Cant check submission alpha_id vRlv38Lr. {'detail': 'THROTTLED'}
+2026-07-10 07:09:25,241 - ace - WARNING - Cant check submission alpha_id 6X9evgg5. {'detail': 'THROTTLED'}
+2026-07-10 07:29:49,430 - ace - WARNING - Cant check submission alpha_id e70xRN2M. {'detail': 'THROTTLED'}
+2026-07-10 07:29:53,120 - ace - WARNING - Cant check submission alpha_id QPV9ZX9p. {'detail': 'THROTTLED'}
+2026-07-10 07:32:39,833 - ace - INFO - Getting fields for: region=USA, delay=1, universe=TOP3000
