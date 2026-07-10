@@ -363,6 +363,19 @@ class WQOnlineGP:
             neutralization=self.neutralization_mapping.get(region, "SUBINDUSTRY")
         )
 
+    def keep_alive_session(self):
+        """Sends a quick heartbeat check to the server to keep the session active and prevent expiration."""
+        now = time.time()
+        if not hasattr(self, "last_heartbeat_time"):
+            self.last_heartbeat_time = 0.0
+        if now - self.last_heartbeat_time > 300:
+            try:
+                from ace_lib import check_session_timeout
+                check_session_timeout(self.session)
+                self.last_heartbeat_time = now
+            except Exception:
+                pass
+
     def safe_simulate_alpha_list(self, payloads, retries=1000):
         for attempt in range(retries):
             try:
@@ -651,6 +664,7 @@ class WQOnlineGP:
 
         # Evolution Loop
         for gen in range(1, num_generations + 1):
+            self.keep_alive_session()
             print(f"\n======================================")
             print(f"EVOLVING GENERATION {gen}...")
             print(f"======================================")
