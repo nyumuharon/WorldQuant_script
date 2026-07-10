@@ -7,6 +7,22 @@ import re
 import ast
 import pandas as pd
 
+# Dual-logging system redirecting standard output/error to both terminal and a file
+class Logger(object):
+    def __init__(self, filename="gp_genius_miner.log"):
+        self.terminal = sys.stdout
+        self.log = open(filename, "a", encoding="utf-8")
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+        self.log.flush()
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+
+sys.stdout = Logger()
+sys.stderr = Logger()
+
 # Load environment variables from .env manually
 env_path = ".env" if os.path.exists(".env") else "../.env"
 if os.path.exists(env_path):
@@ -226,17 +242,21 @@ class CustomAlphaMutator:
     def mutate(self, formula, region, status_dict=None):
         if status_dict and float(status_dict.get("turnover", 0.0)) > 0.35:
             if random.random() < 0.7:
-                return self.mutate_turnover(formula)
+                child = self.mutate_turnover(formula)
+                print(f"[MUTATE] [{region}] Wrapped high-turnover parent: {formula} -> child: {child}")
+                return child
             
         mutation_type = random.choice(["field", "operator", "lookback", "turnover"])
         if mutation_type == "field":
-            return self.mutate_fields(formula, region)
+            child = self.mutate_fields(formula, region)
         elif mutation_type == "operator":
-            return self.mutate_operators(formula)
+            child = self.mutate_operators(formula)
         elif mutation_type == "lookback":
-            return self.mutate_lookbacks(formula)
+            child = self.mutate_lookbacks(formula)
         else:
-            return self.mutate_turnover(formula)
+            child = self.mutate_turnover(formula)
+        print(f"[MUTATE] [{region}] Type: {mutation_type} | Parent: {formula} -> Child: {child}")
+        return child
 
     @staticmethod
     def find_top_level_splits(formula):
@@ -258,7 +278,9 @@ class CustomAlphaMutator:
         
         if not splits1 or not splits2:
             op = random.choice(["*", "+", "-", "/"])
-            return f"({formula1}) {op} ({formula2})", f"({formula2}) {op} ({formula1})"
+            child1, child2 = f"({formula1}) {op} ({formula2})", f"({formula2}) {op} ({formula1})"
+            print(f"[CROSSOVER] No splits. Bred: {formula1} & {formula2} -> children: {child1} / {child2}")
+            return child1, child2
             
         idx1, op1 = random.choice(splits1)
         idx2, op2 = random.choice(splits2)
@@ -274,6 +296,7 @@ class CustomAlphaMutator:
         
         child1 = f"{part1_left} {new_op1} {part2_right}"
         child2 = f"{part2_left} {new_op2} {part1_right}"
+        print(f"[CROSSOVER] Split bred: {formula1} & {formula2} -> children: {child1} / {child2}")
         return child1, child2
 
 class WQOnlineGP:
@@ -721,6 +744,7 @@ class WQOnlineGP:
         try:
             shutil.copy2("gp_live_search_results.csv", r"C:\Users\HP\Downloads\gp_live_search_results_nyumuharon.csv")
             shutil.copy2("passed_alphas.csv", r"C:\Users\HP\Downloads\passed_alphas_nyumuharon.csv")
+            shutil.copy2("gp_genius_miner.log", r"C:\Users\HP\Downloads\gp_genius_miner_nyumuharon.log")
         except Exception:
             pass
 

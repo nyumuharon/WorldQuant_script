@@ -78,3 +78,9 @@
 2026-07-10 23:06:45,793 - ace - WARNING - Cant check submission alpha_id MPQ7k8lo. {'detail': 'THROTTLED'}
 2026-07-10 23:06:46,803 - ace - WARNING - Cant check submission alpha_id e70zLndN. {'detail': 'THROTTLED'}
 2026-07-10 23:06:48,952 - ace - WARNING - Cant check submission alpha_id A1Plk7gQ. {'detail': 'THROTTLED'}
+2026-07-10 23:23:48,714 - ace - WARNING - Simulation failed. {"detail":"CONCURRENT_SIMULATION_LIMIT_EXCEEDED"}, Status code: 429
+2026-07-10 23:34:36,583 - ace - WARNING - Cant check submission alpha_id MPQ7xjEo. {'detail': 'THROTTLED'}
+2026-07-10 23:34:38,159 - ace - WARNING - Cant check submission alpha_id gJMj3YWQ. {'detail': 'THROTTLED'}
+2026-07-10 23:34:40,664 - ace - WARNING - Cant check submission alpha_id QPV7Q0dX. {'detail': 'THROTTLED'}
+2026-07-10 23:34:42,495 - ace - WARNING - Cant check submission alpha_id gJMj3jgl. {'detail': 'THROTTLED'}
+2026-07-10 23:34:48,175 - ace - WARNING - Cant check submission alpha_id 2rLlKx3J. {'detail': 'THROTTLED'}
