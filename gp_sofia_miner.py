@@ -44,8 +44,17 @@ import ace_lib
 from ace_lib import start_session, simulate_alpha_list, get_operators, get_datafields
 from helpful_functions import prettify_result
 
+# Configuration flag to strictly log in exactly once.
+# If True, the script will perform only one initial login and exit when the session token expires (after ~2 hours) to avoid login rate limits.
+# If False, the script will safely refresh the session once every 2 hours as needed, with strict protection against login spamming.
+STRICT_SINGLE_LOGIN = False
+
 # Patch get_credentials to automatically authenticate with this specific account
 ace_lib.get_credentials = lambda: ("sofiajuma015@gmail.com", "Agil@123")
+
+# Monkey-patch check_session_and_relogin to prevent background relogins if strict single login is enabled
+if STRICT_SINGLE_LOGIN:
+    ace_lib.check_session_and_relogin = lambda s: s
 
 # Monkey-patch start_simulation to automatically retry when 429 Concurrent Limit Exceeded occurs
 original_start_simulation = ace_lib.start_simulation
@@ -371,6 +380,10 @@ class WQOnlineGP:
         except Exception:
             pass  # Timeout check failed, proceed to rate limit check
             
+        if STRICT_SINGLE_LOGIN:
+            print("--> [Strict Session Guard] Session has expired. STRICT_SINGLE_LOGIN is enabled. Stopping execution to prevent further sign-ins.")
+            sys.exit(0)
+
         # Only log in if at least 15 minutes (900 seconds) have passed since the last login attempt
         if now - self.last_login_time > 900:
             print("--> [Session Manager] Session expired or invalid. Performing safe session refresh...")
