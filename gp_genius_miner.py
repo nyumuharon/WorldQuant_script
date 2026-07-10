@@ -704,9 +704,9 @@ if __name__ == "__main__":
             "ts_mean(sign(open / close - 1) * scale(volume), 126)"
         ],
         "GLB": [
-            "alpha=ts_scale(oth335_hc_combined_all_region_linear,400)+ts_scale(mdl110_score,252);group_neutralize(rank(ts_backfill(alpha,600))+ts_rank(-returns,252),subindustry);",
             "ts_mean(rank(close) * rank(volume), 252)",
-            "ts_mean(sign(open / close - 1) * scale(volume), 126)"
+            "ts_mean(sign(open / close - 1) * scale(volume), 126)",
+            "ts_delay(rank(close) * ts_rank(volume, 126), 63)"
         ],
         "IND": [
             "alpha=ts_scale(oth335_hc_combined_all_region_linear,400)+ts_scale(mdl110_score,252);group_neutralize(rank(ts_backfill(alpha,600))+ts_rank(-returns,252),subindustry);"
