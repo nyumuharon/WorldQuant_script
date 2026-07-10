@@ -46,13 +46,9 @@ ace_lib.start_simulation = start_simulation_with_retry
 
 class CustomAlphaMutator:
     """
-    Advanced Bug-Free Mutator implementing PDF features:
-    1. Parenthesis Nesting structure: supporting_op(booster_op(f1) * booster_op(f2))
-    2. Turnover Mitigation wrapping
-    3. LLM-Guided Semantic Mutation (Gemini)
-    4. Arity Safety and Local Mutation
+    Advanced Bug-Free Mutator targeting region-specific fields and templates.
     """
-    def __init__(self, allowed_ops, fields_df):
+    def __init__(self, allowed_ops, regional_fields):
         # Group active allowed operators strictly by signature
         all_booster_nlb = [("rank", False), ("scale", False)]
         self.booster_no_lookback = [op for op in all_booster_nlb if op[0] in allowed_ops]
@@ -74,69 +70,71 @@ class CustomAlphaMutator:
 
         self.lookbacks = [63, 126, 252, 504]
 
-        # Filter fields: ONLY keep 'MATRIX' type fields!
-        matrix_df = fields_df[fields_df['type'] == 'MATRIX'].copy()
-        matrix_df['alphaCount'] = pd.to_numeric(matrix_df['alphaCount'], errors='coerce').fillna(0)
-        matrix_df['weight'] = matrix_df['alphaCount'] + 1.0
-        
+        # Filter regional fields: ONLY keep 'MATRIX' type fields!
+        self.all_fields = {}
+        self.booster_fields = {}
         self.supporting_fields_by_cat = {}
-        self.supporting_weights_by_cat = {}
         self.field_to_category = {}
         self.field_to_weight = {}
-        
-        for _, row in matrix_df.iterrows():
-            fid = row['id']
-            weight = float(row['weight'])
-            cat_raw = row['category']
-            cat_name = "Other"
-            if pd.notna(cat_raw):
-                try:
-                    cat_name = ast.literal_eval(cat_raw)['name']
-                except Exception:
-                    try:
-                        cat_name = json.loads(cat_raw.replace("'", '"'))['name']
-                    except Exception:
-                        cat_name = "Other"
-            if cat_name not in self.supporting_fields_by_cat:
-                self.supporting_fields_by_cat[cat_name] = []
-                self.supporting_weights_by_cat[cat_name] = []
-            
-            self.supporting_fields_by_cat[cat_name].append(fid)
-            self.supporting_weights_by_cat[cat_name].append(weight)
-            self.field_to_category[fid] = cat_name
-            self.field_to_weight[fid] = weight
-            
-        self.all_fields = list(self.field_to_category.keys())
-        
-        # Booster fields (Price Volume category)
-        self.booster_fields = self.supporting_fields_by_cat.get("Price Volume", ["close", "open", "volume", "high", "low"])
-        self.booster_fields = [f for f in self.booster_fields if f in self.all_fields]
-        if not self.booster_fields:
-            self.booster_fields = ["close", "open", "volume"]
 
-    def select_weighted(self, choices, weights):
+        for region, fields_df in regional_fields.items():
+            matrix_df = fields_df[fields_df['type'] == 'MATRIX'].copy()
+            matrix_df['alphaCount'] = pd.to_numeric(matrix_df['alphaCount'], errors='coerce').fillna(0)
+            matrix_df['weight'] = matrix_df['alphaCount'] + 1.0
+
+            self.all_fields[region] = []
+            self.supporting_fields_by_cat[region] = {}
+            
+            for _, row in matrix_df.iterrows():
+                fid = row['id']
+                weight = float(row['weight'])
+                cat_raw = row['category']
+                cat_name = "Other"
+                if pd.notna(cat_raw):
+                    try:
+                        cat_name = ast.literal_eval(cat_raw)['name']
+                    except Exception:
+                        try:
+                            cat_name = json.loads(cat_raw.replace("'", '"'))['name']
+                        except Exception:
+                            cat_name = "Other"
+                
+                if cat_name not in self.supporting_fields_by_cat[region]:
+                    self.supporting_fields_by_cat[region][cat_name] = []
+                
+                self.supporting_fields_by_cat[region][cat_name].append(fid)
+                self.all_fields[region].append(fid)
+                self.field_to_category[(region, fid)] = cat_name
+                self.field_to_weight[(region, fid)] = weight
+
+            # Extract price volume fields for boosters
+            self.booster_fields[region] = self.supporting_fields_by_cat[region].get("Price Volume", ["close", "open", "volume", "high", "low"])
+            self.booster_fields[region] = [f for f in self.booster_fields[region] if f in self.all_fields[region]]
+            if not self.booster_fields[region]:
+                self.booster_fields[region] = ["close", "open", "volume"]
+
+    def select_weighted(self, region, choices):
+        weights = [self.field_to_weight.get((region, f), 1.0) for f in choices]
         return random.choices(choices, weights=weights, k=1)[0]
 
-    def mutate_fields(self, formula):
-        """Mutate exactly ONE field token in the formula (fixes cascade mutations)."""
-        present_fields = [f for f in self.all_fields if re.search(rf"\b{f}\b", formula)]
+    def mutate_fields(self, formula, region):
+        """Mutate exactly ONE field token in the formula for the specified region."""
+        present_fields = [f for f in self.all_fields[region] if re.search(rf"\b{f}\b", formula)]
         if not present_fields:
             return formula
             
         target_field = random.choice(present_fields)
-        cat = self.field_to_category[target_field]
+        cat = self.field_to_category.get((region, target_field), "Other")
         
-        if target_field in self.booster_fields and random.random() < 0.5:
-            choices = [f for f in self.booster_fields if f != target_field]
+        if target_field in self.booster_fields[region] and random.random() < 0.5:
+            choices = [f for f in self.booster_fields[region] if f != target_field]
         else:
-            choices = [f for f in self.supporting_fields_by_cat[cat] if f != target_field]
+            choices = [f for f in self.supporting_fields_by_cat[region].get(cat, []) if f != target_field]
             
         if not choices:
-            choices = [f for f in self.all_fields if f != target_field]
+            choices = [f for f in self.all_fields[region] if f != target_field]
             
-        weights = [self.field_to_weight[f] for f in choices]
-        new_field = self.select_weighted(choices, weights)
-        
+        new_field = self.select_weighted(region, choices)
         return re.sub(rf"\b{target_field}\b", new_field, formula, count=1)
 
     def mutate_operators(self, formula):
@@ -192,23 +190,18 @@ class CustomAlphaMutator:
         return re.sub(pattern, replacement, formula, count=1)
 
     def mutate_turnover(self, formula):
-        """
-        Turnover Mitigation Wrapper (Section 6 & 11 Blueprint):
-        Wraps a high-turnover formula in a decay operator (e.g. ts_decay or ts_decay_linear)
-        to smooth out trading changes and satisfy the 12.5% - 30% corridor.
-        """
+        """Wraps a formula in a linear decay function."""
         decay_period = random.choice([5, 10, 20])
         return f"ts_decay_linear({formula}, {decay_period})"
 
-    def mutate(self, formula, status_dict=None):
-        # If the parent has high turnover, prioritize wrapping it in linear decay
+    def mutate(self, formula, region, status_dict=None):
         if status_dict and float(status_dict.get("turnover", 0.0)) > 0.35:
             if random.random() < 0.7:
                 return self.mutate_turnover(formula)
             
         mutation_type = random.choice(["field", "operator", "lookback", "turnover"])
         if mutation_type == "field":
-            return self.mutate_fields(formula)
+            return self.mutate_fields(formula, region)
         elif mutation_type == "operator":
             return self.mutate_operators(formula)
         elif mutation_type == "lookback":
@@ -255,48 +248,36 @@ class CustomAlphaMutator:
         return child1, child2
 
 class WQOnlineGP:
-    def __init__(self, region="USA", population_size=12):
-        self.region = region.upper()
-        self.population_size = population_size
+    def __init__(self, regions=["USA", "GLB", "IND", "ASI"], population_size_per_region=6):
+        self.regions = [r.upper() for r in regions]
+        self.population_size_per_region = population_size_per_region
         self.mutator = None
         self.history = []
         self.passed_alphas = []
         self.session = None
 
-        # Regional mapping (optimized for Genius-level passed alphas)
-        universe_mapping = {
+        # Regional Mappings (optimized for Genius-level passed settings)
+        self.universe_mapping = {
             "USA": "TOP3000",
             "GLB": "MINVOL1M",
             "IND": "TOP500",
-            "ASI": "MINVOL1M",
-            "CHN": "TOP2000"
+            "ASI": "MINVOL1M"
         }
-        neutralization_mapping = {
+        self.neutralization_mapping = {
             "USA": "INDUSTRY",
             "GLB": "STATISTICAL",
             "IND": "STATISTICAL",
-            "ASI": "STATISTICAL",
-            "CHN": "SUBINDUSTRY"
+            "ASI": "STATISTICAL"
         }
-        decay_mapping = {
+        self.decay_mapping = {
             "USA": 4,
             "GLB": 5,
             "IND": 5,
-            "ASI": 7,
-            "CHN": 12
+            "ASI": 7
         }
 
-        self.universe = universe_mapping.get(self.region, "TOP3000")
-        self.neutralization = neutralization_mapping.get(self.region, "SUBINDUSTRY")
-
-        # Concurrency limit based on Genius tier limits:
-        # GLB allows 4 concurrent simulations, other regions allow 8!
-        if self.region == "GLB":
-            self.concurrency_limit = 4
-        else:
-            self.concurrency_limit = 8
-
-        self.decay = decay_mapping.get(self.region, 12)
+        # Concurrency limit safe default for mixed batch
+        self.concurrency_limit = 4
 
         self.sim_config = {
             'get_pnl': False,
@@ -309,19 +290,18 @@ class WQOnlineGP:
             'check_prod_corr': True
         }
 
-    def build_payload(self, formula):
+    def build_payload(self, formula, region):
         from ace_lib import generate_alpha
         return generate_alpha(
             regular=formula,
-            region=self.region,
-            universe=self.universe,
+            region=region,
+            universe=self.universe_mapping.get(region, "TOP3000"),
             delay=1,
-            decay=self.decay,
-            neutralization=self.neutralization
+            decay=self.decay_mapping.get(region, 12),
+            neutralization=self.neutralization_mapping.get(region, "SUBINDUSTRY")
         )
 
     def safe_simulate_alpha_list(self, payloads, retries=10):
-        """Wrapper for simulate_alpha_list with automatic retries on network disconnect errors."""
         for attempt in range(retries):
             try:
                 results = simulate_alpha_list(
@@ -380,17 +360,17 @@ class WQOnlineGP:
     def get_passed_count(self, checks_data):
         return sum(1 for status in checks_data.values() if status == "PASS")
 
-    def select_parent_tournament(self, tournament_size=3):
-        candidates = random.sample(self.history, min(len(self.history), tournament_size))
+    def select_parent_tournament(self, region_population, tournament_size=3):
+        candidates = random.sample(region_population, min(len(region_population), tournament_size))
         candidates = sorted(candidates, key=lambda x: (x.get("passed_count", 0), x.get("fitness", 0)), reverse=True)
         return candidates[0]
 
     def process_simulation_results(self, results, generation, origin_status):
         for item in results:
             formula = item["simulate_data"]["regular"]
+            region = item["simulate_data"]["settings"]["region"]
             alpha_id = item.get("alpha_id")
             
-            # Detailed metrics initialization
             sub_universe_sharpe = 0.0
             robust_sharpe = 0.0
             ladder_yr_2_sharpe = 0.0
@@ -402,7 +382,6 @@ class WQOnlineGP:
 
             if alpha_id:
                 try:
-                    # Query the full simulation result JSON from WQ Brain API
                     result_json = ace_lib.get_simulation_result_json(self.session, alpha_id)
                     is_data = result_json.get("is", {})
                     sharpe = float(is_data.get("sharpe", 0.0))
@@ -414,7 +393,6 @@ class WQOnlineGP:
                     sub_universe_sharpe = float(is_data.get("subUniverseSharpe", 0.0))
                     robust_sharpe = float(is_data.get("robustSharpe", 0.0))
                     
-                    # Year 2 Ladder Sharpe is the second element in the ladder list
                     ladder_data = result_json.get("ladder", [])
                     if isinstance(ladder_data, list) and len(ladder_data) >= 2:
                         ladder_yr_2_sharpe = float(ladder_data[1].get("sharpe", 0.0))
@@ -432,7 +410,7 @@ class WQOnlineGP:
             
             passed_all_platform = self.check_if_passed(checks_data)
             
-            # Local Genius-level validation check (Section 4 & 5 Blueprint)
+            # Local Genius-level validation check
             passed_genius = (
                 sharpe >= 1.58 and
                 fitness >= 1.0 and
@@ -448,6 +426,7 @@ class WQOnlineGP:
             record = {
                 "generation": generation,
                 "formula": formula,
+                "region": region,
                 "alpha_id": alpha_id,
                 "sharpe": sharpe,
                 "fitness": fitness,
@@ -467,6 +446,7 @@ class WQOnlineGP:
             if passed_all_platform or passed_genius:
                 passed_record = {
                     "formula": formula,
+                    "region": region,
                     "alpha_id": alpha_id,
                     "sharpe": sharpe,
                     "fitness": fitness,
@@ -479,16 +459,16 @@ class WQOnlineGP:
                 }
                 passed_record.update(checks_data)
                 
-                if not any(x["formula"] == formula for x in self.passed_alphas):
+                if not any(x["formula"] == formula and x["region"] == region for x in self.passed_alphas):
                     self.passed_alphas.append(passed_record)
                     status_lbl = "GENIUS" if passed_genius else "PLATFORM"
-                    print(f"--> [{status_lbl} PASSED] Alpha {alpha_id} passed! Added to golden list.")
+                    print(f"--> [{status_lbl} PASSED] [{region}] Alpha {alpha_id} passed! Added to golden list.")
 
             yield record
 
-    def run_online_evolution(self, seeds, num_generations=2):
+    def run_online_evolution(self, regional_seeds, num_generations=500):
         print(f"\n==============================================")
-        print(f"STARTING GOAL-DIRECTED AUTONOMOUS ALPHA MINER")
+        print(f"STARTING GENIUS MULTI-REGION ISLAND MINER")
         print(f"==============================================\n")
 
         self.session = start_session()
@@ -498,13 +478,17 @@ class WQOnlineGP:
         ops_df = get_operators(self.session)
         allowed_ops = set(ops_df['name'].tolist())
 
-        print(f"Querying allowed datafields for {self.region} region...")
-        fields_df = get_datafields(self.session, region=self.region, delay=1, universe=self.universe)
+        # Load dynamic datafields for all islands/regions
+        regional_fields = {}
+        for r in self.regions:
+            print(f"Querying allowed datafields for {r} region...")
+            fields_df = get_datafields(self.session, region=r, delay=1, universe=self.universe_mapping[r])
+            regional_fields[r] = fields_df
 
-        self.mutator = CustomAlphaMutator(allowed_ops, fields_df)
-        print(f"Loaded {len(allowed_ops)} operators and {len(self.mutator.all_fields)} MATRIX fields.")
+        self.mutator = CustomAlphaMutator(allowed_ops, regional_fields)
+        print(f"Initialized Mutator for regions: {self.regions}")
 
-        # Load seeds from passed list if it exists and load full history to prevent duplicates
+        # Load seeds from passed list if it exists
         passed_path = "passed_alphas.csv"
         pre_existing_records = []
         if os.path.exists(passed_path):
@@ -513,7 +497,6 @@ class WQOnlineGP:
                 if not passed_df.empty and "formula" in passed_df.columns:
                     for _, row in passed_df.iterrows():
                         rec = row.to_dict()
-                        # Reconstruct keys to ensure perfect match with self.history
                         rec["generation"] = 0
                         rec["status"] = "PASS"
                         rec["passed_count"] = int(rec.get("passed_count", 7))
@@ -522,7 +505,7 @@ class WQOnlineGP:
                         rec["ladder_year_2_sharpe"] = float(rec.get("ladder_year_2_sharpe", 0.0))
                         rec["is_genius"] = rec.get("is_genius", "FAIL")
                         pre_existing_records.append(rec)
-                    print(f"Loaded {len(pre_existing_records)} pre-existing 7/7 alphas directly into memory.")
+                    print(f"Loaded {len(pre_existing_records)} pre-existing alphas directly into memory.")
             except Exception as e:
                 print(f"Note: Could not load past seeds: {e}")
 
@@ -533,83 +516,128 @@ class WQOnlineGP:
             try:
                 hist_df = pd.read_csv(history_path)
                 if not hist_df.empty and "formula" in hist_df.columns:
-                    self.simulated_formulas = set(hist_df["formula"].dropna().tolist())
-                    print(f"Loaded {len(self.simulated_formulas)} historically simulated formulas to prevent duplicate runs.")
+                    # Stored key format: (region, formula)
+                    for _, row in hist_df.iterrows():
+                        self.simulated_formulas.add((row["region"].upper(), row["formula"]))
+                    print(f"Loaded {len(self.simulated_formulas)} historically simulated formulas.")
             except Exception as e:
                 print(f"Note: Could not load history: {e}")
 
-        # Clean seed formulas
-        cleaned_seeds = []
-        for formula in seeds:
-            cleaned = formula
-            if "ts_delay" in allowed_ops:
-                cleaned = re.sub(r"\bdelay\(", "ts_delay(", cleaned)
-            # Only simulate if we don't have its record already
-            if cleaned not in [r["formula"] for r in pre_existing_records]:
-                cleaned_seeds.append(cleaned)
-
-        if cleaned_seeds:
-            print(f"Backtesting {len(cleaned_seeds)} new seed formulas...")
-            seed_results = self.safe_simulate_alpha_list([self.build_payload(f) for f in cleaned_seeds])
-            new_seed_population = list(self.process_simulation_results(seed_results, 0, "seed"))
-        else:
-            new_seed_population = []
-
-        # Combine loaded and newly simulated population
+        # Distribute pre-existing records and clean seeds into separate region populations (islands)
+        self.populations = {r: [] for r in self.regions}
         self.history.extend(pre_existing_records)
         self.passed_alphas = [r for r in pre_existing_records]
-        
-        current_population = pre_existing_records + new_seed_population
-        current_population = sorted(current_population, key=lambda x: (x.get("passed_count", 0), x.get("fitness", 0)), reverse=True)
-        current_population = current_population[:self.population_size]
+
+        for r in self.regions:
+            # Add pre-existing passed records belonging to this region
+            region_existing = [rec for rec in pre_existing_records if rec.get("region", "").upper() == r]
+            self.populations[r].extend(region_existing)
+
+            # Determine seeds for this region
+            seeds = regional_seeds.get(r, [])
+            cleaned_seeds = []
+            for formula in seeds:
+                cleaned = formula
+                if "ts_delay" in allowed_ops:
+                    cleaned = re.sub(r"\bdelay\(", "ts_delay(", cleaned)
+                # Skip if already simulated
+                if (r, cleaned) not in self.simulated_formulas and cleaned not in [x["formula"] for x in region_existing]:
+                    cleaned_seeds.append(cleaned)
+
+            if cleaned_seeds:
+                print(f"Backtesting {len(cleaned_seeds)} new seed formulas for {r}...")
+                seed_payloads = [self.build_payload(f, r) for f in cleaned_seeds]
+                seed_results = self.safe_simulate_alpha_list(seed_payloads)
+                new_seed_pop = list(self.process_simulation_results(seed_results, 0, "seed"))
+                self.populations[r].extend(new_seed_pop)
+                for f in cleaned_seeds:
+                    self.simulated_formulas.add((r, f))
+
+            # Crop initial population to target size
+            self.populations[r] = sorted(self.populations[r], key=lambda x: (x.get("passed_count", 0), x.get("fitness", 0)), reverse=True)
+            self.populations[r] = self.populations[r][:self.population_size_per_region]
+
         self.save_results_to_disk()
 
+        # Evolution Loop
         for gen in range(1, num_generations + 1):
             print(f"\n======================================")
             print(f"EVOLVING GENERATION {gen}...")
             print(f"======================================")
 
-            offspring_formulas = []
-            attempts = 0
-            
-            while len(offspring_formulas) < self.population_size and attempts < 200:
-                attempts += 1
-                if random.random() < 0.7:
-                    parent_record = self.select_parent_tournament()
-                    parent_formula = parent_record["formula"]
-                    
-                    child = self.mutator.mutate(parent_formula, parent_record)
-                    if child not in [p["formula"] for p in current_population] and child not in offspring_formulas and child not in self.simulated_formulas:
-                        offspring_formulas.append(child)
-                else:
-                    parent_record1 = self.select_parent_tournament()
-                    parent_record2 = self.select_parent_tournament()
-                    parent1 = parent_record1["formula"]
-                    parent2 = parent_record2["formula"]
-                    
-                    if parent1 != parent2:
-                        child1, child2 = CustomAlphaMutator.crossover(parent1, parent2)
-                        for child in (child1, child2):
-                            if len(offspring_formulas) < self.population_size and child not in [p["formula"] for p in current_population] and child not in offspring_formulas and child not in self.simulated_formulas:
-                                offspring_formulas.append(child)
+            offspring_payloads = []
+            generation_formulas = []  # List of tuples: (region, formula)
 
-            if not offspring_formulas:
+            # Evolve each region (island) independently
+            for r in self.regions:
+                region_pop = self.populations[r]
+                if len(region_pop) < 2:
+                    # Fallback to random templates if population is too small
+                    print(f"--> [Warning] Pool for region {r} is too small to evolve. Seeding raw templates.")
+                    raw_template_seed = [
+                        "ts_mean(rank(close) * rank(volume), 252)",
+                        "ts_mean(sign(open / close - 1) * scale(volume), 126)"
+                    ]
+                    for f in raw_template_seed:
+                        offspring_payloads.append(self.build_payload(f, r))
+                        generation_formulas.append((r, f))
+                    continue
+
+                region_offspring = []
+                attempts = 0
+                target_offspring_count = max(2, self.population_size_per_region // 2)
+
+                while len(region_offspring) < target_offspring_count and attempts < 100:
+                    attempts += 1
+                    if random.random() < 0.7:
+                        # Mutate
+                        parent_record = self.select_parent_tournament(region_pop)
+                        parent_formula = parent_record["formula"]
+                        child = self.mutator.mutate(parent_formula, r, parent_record)
+                        
+                        if (child not in [p["formula"] for p in region_pop] and 
+                            child not in region_offspring and 
+                            (r, child) not in self.simulated_formulas):
+                            region_offspring.append(child)
+                    else:
+                        # Crossover
+                        parent_record1 = self.select_parent_tournament(region_pop)
+                        parent_record2 = self.select_parent_tournament(region_pop)
+                        parent1 = parent_record1["formula"]
+                        parent2 = parent_record2["formula"]
+                        
+                        if parent1 != parent2:
+                            child1, child2 = CustomAlphaMutator.crossover(parent1, parent2)
+                            for child in (child1, child2):
+                                if (len(region_offspring) < target_offspring_count and 
+                                    child not in [p["formula"] for p in region_pop] and 
+                                    child not in region_offspring and 
+                                    (r, child) not in self.simulated_formulas):
+                                    region_offspring.append(child)
+
+                # Add to total batch
+                for f in region_offspring:
+                    offspring_payloads.append(self.build_payload(f, r))
+                    generation_formulas.append((r, f))
+
+            if not offspring_payloads:
                 print(f"--> [Warning] Evolved pool in generation {gen} was already completely simulated. Stopping evolution.")
                 break
 
-            print(f"Submitting {len(offspring_formulas)} offspring formulas to simulator...")
-            offspring_payloads = [self.build_payload(f) for f in offspring_formulas]
+            print(f"Submitting {len(offspring_payloads)} offspring formulas across all regions to simulator...")
             offspring_results = self.safe_simulate_alpha_list(offspring_payloads)
             new_candidates = list(self.process_simulation_results(offspring_results, gen, "evolved"))
 
-            # Update simulated formulas set in memory
-            for f in offspring_formulas:
-                self.simulated_formulas.add(f)
+            # Update simulated history in memory
+            for r, f in generation_formulas:
+                self.simulated_formulas.add((r, f))
 
-            # Elitism and Selection
-            combined_pool = current_population + new_candidates
-            combined_pool = sorted(combined_pool, key=lambda x: (x.get("passed_count", 0), x.get("fitness", 0)), reverse=True)
-            current_population = combined_pool[:self.population_size]
+            # Apply selection on each island separately
+            for r in self.regions:
+                region_new = [c for c in new_candidates if c["region"] == r]
+                combined_pool = self.populations[r] + region_new
+                combined_pool = sorted(combined_pool, key=lambda x: (x.get("passed_count", 0), x.get("fitness", 0)), reverse=True)
+                self.populations[r] = combined_pool[:self.population_size_per_region]
 
             self.save_results_to_disk()
             print(f"Generation {gen} completed. Passed alphas count: {len(self.passed_alphas)}")
@@ -620,7 +648,7 @@ class WQOnlineGP:
         
         passed_df = pd.DataFrame(self.passed_alphas)
         if passed_df.empty:
-            passed_df = pd.DataFrame(columns=["formula", "alpha_id", "sharpe", "fitness", "turnover", "margin_or_sub_sharpe", "sharpe_test", "fitness_test", "turnover_min_test", "turnover_max_test", "weight_test", "sub_sharpe_test", "challenge_test"])
+            passed_df = pd.DataFrame(columns=["formula", "region", "alpha_id", "sharpe", "fitness", "turnover", "margin_or_sub_sharpe", "sub_universe_sharpe", "robust_sharpe", "ladder_year_2_sharpe", "is_genius", "sharpe_test", "fitness_test", "turnover_min_test", "turnover_max_test", "weight_test", "sub_sharpe_test", "challenge_test"])
         passed_df.to_csv("passed_alphas.csv", index=False)
         
         # Copy to Downloads
@@ -631,73 +659,28 @@ class WQOnlineGP:
         except Exception:
             pass
 
-def input_with_timeout(prompt, timeout=10, default="USA"):
-    # Check if there are command line arguments first
-    if len(sys.argv) > 1:
-        arg_val = sys.argv[1].strip().upper()
-        if arg_val in ("USA", "GLB", "IND", "ASI", "CHN"):
-            print(f"Using region from command line argument: {arg_val}")
-            return arg_val
-
-    try:
-        import msvcrt
-        print(prompt, end="", flush=True)
-        start_time = time.time()
-        input_str = ""
-        while time.time() - start_time < timeout:
-            if msvcrt.kbhit():
-                char = msvcrt.getwche()
-                if char in ("\r", "\n"):
-                    print()
-                    return input_str.strip().upper()
-                elif char in ("\b", "\xe0"):
-                    if len(input_str) > 0:
-                        input_str = input_str[:-1]
-                else:
-                    input_str += char
-            time.sleep(0.05)
-        print(f"\nNo input received within {timeout} seconds. Defaulting to {default}.")
-        return default
-    except Exception:
-        try:
-            val = input(f"{prompt} (press Enter to use default {default}): ").strip().upper()
-            return val if val in ("USA", "GLB", "IND", "ASI", "CHN") else default
-        except Exception:
-            return default
-
 if __name__ == "__main__":
-    region_choice = input_with_timeout(
-        "Enter target region to mine (USA, GLB, IND, ASI, CHN) [default: USA]: ",
-        timeout=10,
-        default="USA"
-    )
-    if region_choice not in ("USA", "GLB", "IND", "ASI", "CHN"):
-        print(f"Unknown region '{region_choice}'. Defaulting to USA.")
-        region_choice = "USA"
-        
-    # Dynamic seed selection based on the target region (from user's passed Genius alphas)
-    if region_choice == "ASI":
-        seed_formulas = [
-            "alpha=ts_rank(imb5_score,400)+ts_rank(rel_val_buyback_yield_component_score_3,252);group_neutralize(rank(ts_backfill(alpha,600))+ts_rank(-returns,252),subindustry);",
-            "alpha=ts_rank(mdl110_score,400)+ts_rank(rel_val_buyback_yield_component_score_3*adv20,252);group_neutralize(rank(ts_backfill(alpha,600))+ts_rank(-returns,252),subindustry);"
-        ]
-    elif region_choice == "IND":
-        seed_formulas = [
-            "alpha=ts_scale(oth335_hc_combined_all_region_linear,400)+ts_scale(mdl110_score,252);group_neutralize(rank(ts_backfill(alpha,600))+ts_rank(-returns,252),subindustry);"
-        ]
-    elif region_choice == "USA":
-        seed_formulas = [
+    # Load dynamic regional seed pools based on your passed alphas
+    regional_seeds = {
+        "USA": [
             "rank(anl4_capex_flag)-rank(assets/liabilities_curr) + (0.59*trade_when(option_breakeven_270>put_breakeven_270,-rank(fn_eff_income_tax_rate_continuing_operations_a),-1)) + -ts_corr(ts_delta(fscore_momentum,90),ts_delta(fscore_value,90),920)*rank(-volume)",
             "ts_mean(rank(close) * rank(volume), 252)",
             "ts_mean(sign(open / close - 1) * scale(volume), 126)"
-        ]
-    else: # GLB
-        seed_formulas = [
+        ],
+        "GLB": [
             "alpha=ts_scale(oth335_hc_combined_all_region_linear,400)+ts_scale(mdl110_score,252);group_neutralize(rank(ts_backfill(alpha,600))+ts_rank(-returns,252),subindustry);",
             "ts_mean(rank(close) * rank(volume), 252)",
             "ts_mean(sign(open / close - 1) * scale(volume), 126)"
+        ],
+        "IND": [
+            "alpha=ts_scale(oth335_hc_combined_all_region_linear,400)+ts_scale(mdl110_score,252);group_neutralize(rank(ts_backfill(alpha,600))+ts_rank(-returns,252),subindustry);"
+        ],
+        "ASI": [
+            "alpha=ts_rank(imb5_score,400)+ts_rank(rel_val_buyback_yield_component_score_3,252);group_neutralize(rank(ts_backfill(alpha,600))+ts_rank(-returns,252),subindustry);",
+            "alpha=ts_rank(mdl110_score,400)+ts_rank(rel_val_buyback_yield_component_score_3*adv20,252);group_neutralize(rank(ts_backfill(alpha,600))+ts_rank(-returns,252),subindustry);"
         ]
+    }
     
-    # Run the bounded loop with the chosen region and the correct Genius concurrency settings
-    gp = WQOnlineGP(region=region_choice, population_size=12)
-    gp.run_online_evolution(seed_formulas, num_generations=500)
+    # Run the multi-region island loop concurrently
+    gp = WQOnlineGP(regions=["USA", "GLB", "IND", "ASI"], population_size_per_region=6)
+    gp.run_online_evolution(regional_seeds, num_generations=500)
