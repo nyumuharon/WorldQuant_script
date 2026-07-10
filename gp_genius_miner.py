@@ -379,6 +379,7 @@ class WQOnlineGP:
             fitness = 0.0
             turnover = 0.0
             margin = 0.0
+            prod_correlation_val = 0.0
 
             if alpha_id:
                 try:
@@ -396,8 +397,15 @@ class WQOnlineGP:
                     ladder_data = result_json.get("ladder", [])
                     if isinstance(ladder_data, list) and len(ladder_data) >= 2:
                         ladder_yr_2_sharpe = float(ladder_data[1].get("sharpe", 0.0))
+
+                    # Query the production correlation directly from the server
+                    prod_df = ace_lib.get_prod_corr(self.session, alpha_id)
+                    if not prod_df.empty and "max" in prod_df.columns:
+                        live_corr = prod_df[prod_df.alphas > 0]
+                        if not live_corr.empty:
+                            prod_correlation_val = float(live_corr["max"].max())
                 except Exception as e:
-                    print(f"--> [Warning] Failed to fetch full JSON stats for {alpha_id}: {e}")
+                    print(f"--> [Warning] Failed to fetch full JSON / prod correlation stats for {alpha_id}: {e}")
                     is_stats = item.get("is_stats")
                     if is_stats is not None and not is_stats.empty:
                         sharpe = float(is_stats.iloc[0].get("sharpe", 0.0))
@@ -410,14 +418,16 @@ class WQOnlineGP:
             
             passed_all_platform = self.check_if_passed(checks_data)
             
-            # Local Genius-level validation check
+            # Local Genius-level validation check with strict custom thresholds
             passed_genius = (
                 sharpe >= 1.58 and
                 fitness >= 1.0 and
                 0.01 <= turnover <= 0.40 and
-                sub_universe_sharpe >= 0.87 and
+                sub_universe_sharpe >= 1.0 and      # Enforcing sub universe is >= 1.0
                 robust_sharpe >= 1.0 and
-                ladder_yr_2_sharpe >= 2.02
+                ladder_yr_2_sharpe >= 2.02 and
+                returns >= 0.08 and                 # Enforcing returns >= 8%
+                prod_correlation_val < 0.60         # Enforcing prod correlation < 0.6
             )
             
             passed_count = self.get_passed_count(checks_data)
@@ -431,6 +441,8 @@ class WQOnlineGP:
                 "sharpe": sharpe,
                 "fitness": fitness,
                 "turnover": turnover,
+                "returns": returns,
+                "prod_correlation": prod_correlation_val,
                 "margin_or_sub_sharpe": margin,
                 "sub_universe_sharpe": sub_universe_sharpe,
                 "robust_sharpe": robust_sharpe,
@@ -451,6 +463,8 @@ class WQOnlineGP:
                     "sharpe": sharpe,
                     "fitness": fitness,
                     "turnover": turnover,
+                    "returns": returns,
+                    "prod_correlation": prod_correlation_val,
                     "margin_or_sub_sharpe": margin,
                     "sub_universe_sharpe": sub_universe_sharpe,
                     "robust_sharpe": robust_sharpe,
@@ -503,6 +517,8 @@ class WQOnlineGP:
                         rec["sub_universe_sharpe"] = float(rec.get("sub_universe_sharpe", 0.0))
                         rec["robust_sharpe"] = float(rec.get("robust_sharpe", 0.0))
                         rec["ladder_year_2_sharpe"] = float(rec.get("ladder_year_2_sharpe", 0.0))
+                        rec["returns"] = float(rec.get("returns", 0.0))
+                        rec["prod_correlation"] = float(rec.get("prod_correlation", 0.0))
                         rec["is_genius"] = rec.get("is_genius", "FAIL")
                         pre_existing_records.append(rec)
                     print(f"Loaded {len(pre_existing_records)} pre-existing alphas directly into memory.")
