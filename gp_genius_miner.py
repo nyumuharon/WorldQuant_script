@@ -312,6 +312,7 @@ class WQOnlineGP:
         self.history = []
         self.passed_alphas = []
         self.session = None
+        self.last_login_time = time.time()
 
         # Regional Mappings (optimized for Genius-level passed settings)
         self.universe_mapping = {
@@ -358,6 +359,27 @@ class WQOnlineGP:
             neutralization=self.neutralization_mapping.get(region, "SUBINDUSTRY")
         )
 
+    def refresh_session_if_needed(self):
+        """Refreshes the session only if it is actually expired or at least 15 minutes have passed since last login."""
+        now = time.time()
+        # Check if the token is still valid using check_session_timeout from ace_lib
+        from ace_lib import check_session_timeout
+        try:
+            remaining = check_session_timeout(self.session)
+            if remaining > 300:  # If token has more than 5 minutes remaining, it is still valid!
+                return
+        except Exception:
+            pass  # Timeout check failed, proceed to rate limit check
+            
+        # Only log in if at least 15 minutes (900 seconds) have passed since the last login attempt
+        if now - self.last_login_time > 900:
+            print("--> [Session Manager] Session expired or invalid. Performing safe session refresh...")
+            try:
+                self.session = start_session()
+                self.last_login_time = now
+            except Exception as e:
+                print(f"--> [Session Manager Error] Failed to refresh session: {e}")
+
     def safe_simulate_alpha_list(self, payloads, retries=1000):
         for attempt in range(retries):
             try:
@@ -371,10 +393,7 @@ class WQOnlineGP:
             except Exception as e:
                 print(f"--> [Network Connection Error] {e}. Attempt {attempt + 1}/{retries}. Retrying in 45 seconds...")
                 time.sleep(45)
-                try:
-                    self.session = start_session()
-                except Exception as ses_err:
-                    print(f"Failed to refresh session: {ses_err}")
+                self.refresh_session_if_needed()
         print("--> [Critical Error] All network retries failed.")
         return []
 
@@ -390,10 +409,7 @@ class WQOnlineGP:
             except Exception as e:
                 print(f"--> [Network Error in API Query] {e}. Attempt {attempt + 1}/1000. Retrying query in 15 seconds...")
                 time.sleep(15)
-                try:
-                    self.session = start_session()
-                except Exception:
-                    pass
+                self.refresh_session_if_needed()
         return None
 
     def parse_is_checks(self, is_tests_df):
