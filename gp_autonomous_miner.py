@@ -7,6 +7,22 @@ import re
 import ast
 import pandas as pd
 
+# Dual-logging system redirecting standard output/error to both terminal and a file
+class Logger(object):
+    def __init__(self, filename="gp_autonomous_miner.log"):
+        self.terminal = sys.stdout
+        self.log = open(filename, "a", encoding="utf-8")
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+        self.log.flush()
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+
+sys.stdout = Logger()
+sys.stderr = Logger()
+
 # Load environment variables from .env manually
 env_path = ".env" if os.path.exists(".env") else "../.env"
 if os.path.exists(env_path):
@@ -31,6 +47,10 @@ from helpful_functions import prettify_result
 # Patch get_credentials to automatically authenticate with this specific account
 ace_lib.get_credentials = lambda: ("nyumuharon@gmail.com", "Piss_axon17")
 
+# Monkey-patch check_session_and_relogin to completely disable background session refreshes.
+# This guarantees that the script will NEVER perform background logins during the night.
+ace_lib.check_session_and_relogin = lambda s: s
+
 # Monkey-patch start_simulation to automatically retry when 429 Concurrent Limit Exceeded occurs
 original_start_simulation = ace_lib.start_simulation
 def start_simulation_with_retry(s, simulate_data):
@@ -43,6 +63,35 @@ def start_simulation_with_retry(s, simulate_data):
         return response
     return response
 ace_lib.start_simulation = start_simulation_with_retry
+
+# Monkey-patch simulate_single_alpha to catch network drops inside the thread pool
+original_simulate_single_alpha = ace_lib.simulate_single_alpha
+def safe_simulate_single_alpha(s, simulate_data):
+    try:
+        return original_simulate_single_alpha(s, simulate_data)
+    except Exception as e:
+        print(f"--> [Warning] simulate_single_alpha failed due to connection reset: {e}. Retrying with empty ID.")
+        return {"alpha_id": None, "simulate_data": simulate_data}
+ace_lib.simulate_single_alpha = safe_simulate_single_alpha
+
+# Monkey-patch get_specified_alpha_stats to catch KeyError 'train'/'test' on failed/timed-out simulations
+original_get_specified_alpha_stats = ace_lib.get_specified_alpha_stats
+def safe_get_specified_alpha_stats(s, alpha_id, simulate_data, *args, **kwargs):
+    try:
+        return original_get_specified_alpha_stats(s, alpha_id, simulate_data, *args, **kwargs)
+    except Exception as e:
+        print(f"--> [Warning] get_specified_alpha_stats encountered error: {e}. Recovering safely.")
+        return {
+            "alpha_id": alpha_id,
+            "simulate_data": simulate_data,
+            "is_stats": None,
+            "pnl": None,
+            "stats": None,
+            "is_tests": None,
+            "train": None,
+            "test": None
+        }
+ace_lib.get_specified_alpha_stats = safe_get_specified_alpha_stats
 
 class CustomAlphaMutator:
     """
@@ -284,7 +333,20 @@ class WQOnlineGP:
             neutralization="SUBINDUSTRY"
         )
 
-    def safe_simulate_alpha_list(self, payloads, retries=10):
+    def keep_alive_session(self):
+        """Sends a quick heartbeat check to the server to keep the session active and prevent expiration."""
+        now = time.time()
+        if not hasattr(self, "last_heartbeat_time"):
+            self.last_heartbeat_time = 0.0
+        if now - self.last_heartbeat_time > 300:
+            try:
+                from ace_lib import check_session_timeout
+                check_session_timeout(self.session)
+                self.last_heartbeat_time = now
+            except Exception:
+                pass
+
+    def safe_simulate_alpha_list(self, payloads, retries=1000):
         """Wrapper for simulate_alpha_list with automatic retries on network disconnect errors."""
         for attempt in range(retries):
             try:
@@ -298,10 +360,6 @@ class WQOnlineGP:
             except Exception as e:
                 print(f"--> [Network Connection Error] {e}. Attempt {attempt + 1}/{retries}. Retrying in 45 seconds...")
                 time.sleep(45)
-                try:
-                    self.session = start_session()
-                except Exception as ses_err:
-                    print(f"Failed to refresh session: {ses_err}")
         print("--> [Critical Error] All network retries failed.")
         return []
 
@@ -480,6 +538,7 @@ class WQOnlineGP:
         self.save_results_to_disk()
 
         for gen in range(1, num_generations + 1):
+            self.keep_alive_session()
             print(f"\n======================================")
             print(f"EVOLVING GENERATION {gen}...")
             print(f"======================================")
