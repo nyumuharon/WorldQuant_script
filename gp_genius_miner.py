@@ -301,7 +301,7 @@ class WQOnlineGP:
             neutralization=self.neutralization_mapping.get(region, "SUBINDUSTRY")
         )
 
-    def safe_simulate_alpha_list(self, payloads, retries=10):
+    def safe_simulate_alpha_list(self, payloads, retries=1000):
         for attempt in range(retries):
             try:
                 results = simulate_alpha_list(
@@ -320,6 +320,24 @@ class WQOnlineGP:
                     print(f"Failed to refresh session: {ses_err}")
         print("--> [Critical Error] All network retries failed.")
         return []
+
+    def safe_query_api(self, api_func, *args, **kwargs):
+        """Wrapper to query the WQ Brain API with automatic infinite retries on connection loss."""
+        for attempt in range(1000):
+            try:
+                # Replace the first argument with self.session if it's a SingleSession type
+                args_list = list(args)
+                if args_list:
+                    args_list[0] = self.session
+                return api_func(*args_list, **kwargs)
+            except Exception as e:
+                print(f"--> [Network Error in API Query] {e}. Attempt {attempt + 1}/1000. Retrying query in 15 seconds...")
+                time.sleep(15)
+                try:
+                    self.session = start_session()
+                except Exception:
+                    pass
+        return None
 
     def parse_is_checks(self, is_tests_df):
         checks_data = {
@@ -383,29 +401,30 @@ class WQOnlineGP:
 
             if alpha_id:
                 try:
-                    result_json = ace_lib.get_simulation_result_json(self.session, alpha_id)
-                    is_data = result_json.get("is", {})
-                    sharpe = float(is_data.get("sharpe", 0.0))
-                    fitness = float(is_data.get("fitness", 0.0))
-                    turnover = float(is_data.get("turnover", 0.0))
-                    returns = float(is_data.get("returns", 0.0))
-                    margin = float(is_data.get("margin", 0.0))
-                    
-                    sub_universe_sharpe = float(is_data.get("subUniverseSharpe", 0.0))
-                    robust_sharpe = float(is_data.get("robustSharpe", 0.0))
-                    
-                    ladder_data = result_json.get("ladder", [])
-                    if isinstance(ladder_data, list) and len(ladder_data) >= 2:
-                        ladder_yr_2_sharpe = float(ladder_data[1].get("sharpe", 0.0))
+                    result_json = self.safe_query_api(ace_lib.get_simulation_result_json, self.session, alpha_id)
+                    if result_json:
+                        is_data = result_json.get("is", {})
+                        sharpe = float(is_data.get("sharpe", 0.0))
+                        fitness = float(is_data.get("fitness", 0.0))
+                        turnover = float(is_data.get("turnover", 0.0))
+                        returns = float(is_data.get("returns", 0.0))
+                        margin = float(is_data.get("margin", 0.0))
+                        
+                        sub_universe_sharpe = float(is_data.get("subUniverseSharpe", 0.0))
+                        robust_sharpe = float(is_data.get("robustSharpe", 0.0))
+                        
+                        ladder_data = result_json.get("ladder", [])
+                        if isinstance(ladder_data, list) and len(ladder_data) >= 2:
+                            ladder_yr_2_sharpe = float(ladder_data[1].get("sharpe", 0.0))
 
                     # Query the production correlation directly from the server
-                    prod_df = ace_lib.get_prod_corr(self.session, alpha_id)
-                    if not prod_df.empty and "max" in prod_df.columns:
+                    prod_df = self.safe_query_api(ace_lib.get_prod_corr, self.session, alpha_id)
+                    if prod_df is not None and not prod_df.empty and "max" in prod_df.columns:
                         live_corr = prod_df[prod_df.alphas > 0]
                         if not live_corr.empty:
                             prod_correlation_val = float(live_corr["max"].max())
                 except Exception as e:
-                    print(f"--> [Warning] Failed to fetch full JSON / prod correlation stats for {alpha_id}: {e}")
+                    print(f"--> [Warning] Failed to process stats for {alpha_id}: {e}")
                     is_stats = item.get("is_stats")
                     if is_stats is not None and not is_stats.empty:
                         sharpe = float(is_stats.iloc[0].get("sharpe", 0.0))
