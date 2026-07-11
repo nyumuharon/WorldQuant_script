@@ -102,3 +102,67 @@
 2026-07-11 00:32:04,595 - ace - WARNING - Cant check submission alpha_id LL177KgM. {'detail': 'THROTTLED'}
 2026-07-11 00:32:24,816 - ace - ERROR - Simulation failed. {'id': '2KVaWI3GI5dC9kc1gnSJdr0z', 'type': 'REGULAR', 'status': 'ERROR', 'message': 'Unexpected character \'(\' near "ha=ts_rank(operating". <linkToCommonErrorMessages>Learn more</linkToCommonErrorMessages>', 'location': {'line': 1, 'start': 29, 'end': 30, 'property': 'regular'}, 'links': {'linkToCommonErrorMessages': 'https://support.worldquantbrain.com/hc/en-us/articles/18423410021783--BRAIN-TIPS-Troubleshooting-common-error-messages'}}
 2026-07-11 00:32:43,460 - ace - ERROR - Simulation failed. {'id': '48BaxgfMv59lbCKwRSvR35b', 'type': 'REGULAR', 'status': 'ERROR', 'message': 'Invalid number of inputs : 2, should be exactly 1 input(s). <linkToCommonErrorMessages>Learn more</linkToCommonErrorMessages>', 'location': {'line': 1, 'start': 106, 'end': 121, 'property': 'regular'}, 'links': {'linkToCommonErrorMessages': 'https://support.worldquantbrain.com/hc/en-us/articles/18423410021783--BRAIN-TIPS-Troubleshooting-common-error-messages'}}
+2026-07-11 00:46:00,560 - ace - WARNING - Cant check submission alpha_id P037ZN0W. {'detail': 'THROTTLED'}
+2026-07-11 00:46:02,935 - ace - WARNING - Cant check submission alpha_id omlq6vQn. {'detail': 'THROTTLED'}
+2026-07-11 00:56:39,845 - ace - WARNING - Cant check submission alpha_id akn7bL7w. {'detail': 'THROTTLED'}
+2026-07-11 01:07:00,576 - ace - WARNING - Cant check submission alpha_id mLbjmdmE. {'detail': 'THROTTLED'}
+2026-07-11 01:07:02,816 - ace - WARNING - Cant check submission alpha_id xAkj3prN. {'detail': 'THROTTLED'}
+2026-07-11 01:07:03,890 - ace - WARNING - Cant check submission alpha_id wpljZrKQ. {'detail': 'THROTTLED'}
+2026-07-11 01:07:09,387 - ace - WARNING - Cant check submission alpha_id mLbj6Ao2. {'detail': 'THROTTLED'}
+2026-07-11 01:30:13,979 - ace - INFO - Trying re-login, wait 100 seconds
+2026-07-11 01:36:27,441 - ace - WARNING - Simulation failed. {"detail":"CONCURRENT_SIMULATION_LIMIT_EXCEEDED"}, Status code: 429
+2026-07-11 01:36:34,206 - ace - WARNING - Simulation failed. {"detail":"CONCURRENT_SIMULATION_LIMIT_EXCEEDED"}, Status code: 429
+2026-07-11 01:37:39,803 - ace - WARNING - Simulation failed. {"detail":"CONCURRENT_SIMULATION_LIMIT_EXCEEDED"}, Status code: 429
+2026-07-11 01:46:05,758 - ace - WARNING - Cant check submission alpha_id YP07M8mW. {'detail': 'THROTTLED'}
+2026-07-11 01:46:07,613 - ace - WARNING - Cant check submission alpha_id 9qrXWOnV. {'detail': 'THROTTLED'}
+2026-07-11 01:46:08,639 - ace - WARNING - Cant check submission alpha_id omlqWZP2. {'detail': 'THROTTLED'}
+2026-07-11 01:46:11,125 - ace - WARNING - Cant check submission alpha_id 2rLljzKb. {'detail': 'THROTTLED'}
+2026-07-11 01:55:52,581 - ace - WARNING - Cant check submission alpha_id gJMjaEQm. {'detail': 'THROTTLED'}
+2026-07-11 01:55:54,964 - ace - WARNING - Cant check submission alpha_id gJMjawbJ. {'detail': 'THROTTLED'}
+2026-07-11 01:55:57,949 - ace - WARNING - Cant check submission alpha_id 781jYJlZ. {'detail': 'THROTTLED'}
+2026-07-11 01:56:04,377 - ace - WARNING - Cant check submission alpha_id 6X9lMj1K. {'detail': 'THROTTLED'}
+2026-07-11 02:09:07,358 - ace - WARNING - Cant check submission alpha_id e70z1edE. {'detail': 'THROTTLED'}
+2026-07-11 02:09:08,424 - ace - WARNING - Cant check submission alpha_id VkP7Mq9b. {'detail': 'THROTTLED'}
+2026-07-11 02:09:09,401 - ace - WARNING - Cant check submission alpha_id zqmkA5LG. {'detail': 'THROTTLED'}
+2026-07-11 02:09:10,422 - ace - WARNING - Cant check submission alpha_id 88QlGLao. {'detail': 'THROTTLED'}
+2026-07-11 02:12:22,744 - ace - WARNING - Simulation failed. {"detail":"CONCURRENT_SIMULATION_LIMIT_EXCEEDED"}, Status code: 429
+2026-07-11 02:19:46,930 - ace - INFO - Trying re-login, wait 100 seconds
+2026-07-11 02:22:37,905 - ace - WARNING - Simulation failed. {"detail":"CONCURRENT_SIMULATION_LIMIT_EXCEEDED"}, Status code: 429
+2026-07-11 02:31:51,741 - ace - WARNING - Cant check submission alpha_id vRljZnLd. {'detail': 'THROTTLED'}
+2026-07-11 02:46:27,199 - ace - WARNING - Cant check submission alpha_id wplj2Jzd. {'detail': 'THROTTLED'}
+2026-07-11 02:46:29,681 - ace - WARNING - Cant check submission alpha_id blqjrQ1l. {'detail': 'THROTTLED'}
+2026-07-11 02:46:31,004 - ace - WARNING - Cant check submission alpha_id akn7QL05. {'detail': 'THROTTLED'}
+2026-07-11 02:46:32,165 - ace - WARNING - Cant check submission alpha_id RR87lbpg. {'detail': 'THROTTLED'}
+2026-07-11 02:46:33,446 - ace - WARNING - Cant check submission alpha_id qMljYYr2. {'detail': 'THROTTLED'}
+2026-07-11 02:59:09,049 - ace - WARNING - Cant check submission alpha_id WjG7zdGk. {'detail': 'THROTTLED'}
+2026-07-11 03:10:18,855 - ace - WARNING - Cant check submission alpha_id 781jm3J1. {'detail': 'THROTTLED'}
+2026-07-11 03:10:19,988 - ace - WARNING - Cant check submission alpha_id QPV7zojW. {'detail': 'THROTTLED'}
+2026-07-11 03:10:22,644 - ace - WARNING - Cant check submission alpha_id Xgn7z3jz. {'detail': 'THROTTLED'}
+2026-07-11 03:10:24,104 - ace - WARNING - Cant check submission alpha_id GrLlzZko. {'detail': 'THROTTLED'}
+2026-07-11 03:10:25,708 - ace - WARNING - Cant check submission alpha_id JjO71MYO. {'detail': 'THROTTLED'}
+2026-07-11 03:10:26,756 - ace - WARNING - Cant check submission alpha_id KP97Q32E. {'detail': 'THROTTLED'}
+2026-07-11 03:10:29,293 - ace - WARNING - Cant check submission alpha_id akn7wvRO. {'detail': 'THROTTLED'}
+2026-07-11 03:25:10,668 - ace - WARNING - Cant check submission alpha_id GrLlxROQ. {'detail': 'THROTTLED'}
+2026-07-11 03:25:12,445 - ace - WARNING - Cant check submission alpha_id qMljV8OV. {'detail': 'THROTTLED'}
+2026-07-11 03:41:31,298 - ace - WARNING - Cant check submission alpha_id d50jv08x. {'detail': 'THROTTLED'}
+2026-07-11 03:41:35,437 - ace - WARNING - Cant check submission alpha_id 9qrXkGV1. {'detail': 'THROTTLED'}
+2026-07-11 03:41:36,983 - ace - WARNING - Cant check submission alpha_id O0Z721qv. {'detail': 'THROTTLED'}
+2026-07-11 03:58:51,838 - ace - WARNING - Cant check submission alpha_id zqmkLbbX. {'detail': 'THROTTLED'}
+2026-07-11 03:58:56,774 - ace - WARNING - Cant check submission alpha_id GrLl7QLG. {'detail': 'THROTTLED'}
+2026-07-11 04:17:45,885 - ace - WARNING - Cant check submission alpha_id ZYn79mVd. {'detail': 'THROTTLED'}
+2026-07-11 04:17:50,854 - ace - WARNING - Cant check submission alpha_id 1YdwR33M. {'detail': 'THROTTLED'}
+2026-07-11 04:29:10,526 - ace - WARNING - Simulation failed. {"detail":"CONCURRENT_SIMULATION_LIMIT_EXCEEDED"}, Status code: 429
+2026-07-11 04:29:53,857 - ace - WARNING - Simulation failed. {"detail":"CONCURRENT_SIMULATION_LIMIT_EXCEEDED"}, Status code: 429
+2026-07-11 04:29:55,109 - ace - WARNING - Simulation failed. {"detail":"CONCURRENT_SIMULATION_LIMIT_EXCEEDED"}, Status code: 429
+2026-07-11 04:30:58,443 - ace - WARNING - Simulation failed. {"detail":"CONCURRENT_SIMULATION_LIMIT_EXCEEDED"}, Status code: 429
+2026-07-11 04:30:59,703 - ace - WARNING - Simulation failed. {"detail":"CONCURRENT_SIMULATION_LIMIT_EXCEEDED"}, Status code: 429
+2026-07-11 04:38:25,958 - ace - WARNING - Cant check submission alpha_id blqj0N7Z. {'detail': 'THROTTLED'}
+2026-07-11 04:49:59,984 - ace - ERROR - Simulation failed. {'id': '4n5Q0egWl4uNbtRXCXbpRg1', 'type': 'REGULAR', 'status': 'ERROR', 'message': 'Expression with 101 operators exceeds limit of 64. <linkToCommonErrorMessages>Learn more</linkToCommonErrorMessages>', 'location': {'line': None, 'start': None, 'end': None, 'property': 'regular'}, 'links': {'linkToCommonErrorMessages': 'https://support.worldquantbrain.com/hc/en-us/articles/18423410021783--BRAIN-TIPS-Troubleshooting-common-error-messages'}}
+2026-07-11 04:50:06,463 - ace - ERROR - Simulation failed. {'id': '2QKoYwfEC597a4bjRmMX2ip', 'type': 'REGULAR', 'status': 'ERROR', 'message': 'Expression with 101 operators exceeds limit of 64. <linkToCommonErrorMessages>Learn more</linkToCommonErrorMessages>', 'location': {'line': None, 'start': None, 'end': None, 'property': 'regular'}, 'links': {'linkToCommonErrorMessages': 'https://support.worldquantbrain.com/hc/en-us/articles/18423410021783--BRAIN-TIPS-Troubleshooting-common-error-messages'}}
+2026-07-11 04:53:19,645 - ace - WARNING - Cant check submission alpha_id 0mEwV961. {'detail': 'THROTTLED'}
+2026-07-11 05:21:53,265 - ace - WARNING - Cant check submission alpha_id omlqxmM6. {'detail': 'THROTTLED'}
+2026-07-11 05:22:02,448 - ace - WARNING - Cant check submission alpha_id O0Z7lKo7. {'detail': 'THROTTLED'}
+2026-07-11 05:38:56,767 - ace - WARNING - Cant check submission alpha_id ZYn7OORd. {'detail': 'THROTTLED'}
+2026-07-11 05:38:57,945 - ace - WARNING - Cant check submission alpha_id e709l7QM. {'detail': 'THROTTLED'}
+2026-07-11 05:39:01,021 - ace - WARNING - Cant check submission alpha_id zqmYv1OO. {'detail': 'THROTTLED'}
+2026-07-11 05:39:03,868 - ace - WARNING - Cant check submission alpha_id LL19Px0e. {'detail': 'THROTTLED'}
